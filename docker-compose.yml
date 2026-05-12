@@ -1,0 +1,125 @@
+# dropsort - local laptop stack.
+# Phase 1: db/redis/vault/minio/sftp come up healthy. api/worker/sftp-ingest/migrate
+# are build-only stubs (no command:) until Phase 5 fills them in.
+
+services:
+
+  # ---------- Infra (upstream images, healthchecks) ----------
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      # Phase 5 swaps this to Vault-sourced. Phase 1 hardcodes a known dev value
+      # so the container becomes healthy; this is NOT a violation of VAULT-04 because
+      # it lives in compose, not in app/.
+      POSTGRES_USER: dropsort
+      POSTGRES_PASSWORD: dropsort-dev
+      POSTGRES_DB: dropsort
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "dropsort", "-d", "dropsort"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  vault:
+    image: hashicorp/vault:1.18
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN:-dropsort-dev-token}
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    ports:
+      - "${VAULT_PORT:-8200}:8200"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8200/v1/sys/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: dropsort
+      MINIO_ROOT_PASSWORD: dropsort-dev-minio
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  sftp:
+    image: atmoz/sftp:latest
+    restart: unless-stopped
+    command: dropsort:dropsort-dev-sftp:1001
+    ports:
+      - "${SFTP_PORT:-2222}:22"
+    volumes:
+      - sftp_incoming:/home/dropsort/incoming
+    healthcheck:
+      # atmoz/sftp's sh is dash (no /dev/tcp). Use pgrep to confirm sshd is running.
+      test: ["CMD-SHELL", "pgrep sshd > /dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ---------- App services (BUILD-ONLY STUBS per CONTEXT D-17) ----------
+  # Phase 5 (Shari, INFRA) adds `command:` directives and `depends_on:` graph.
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dropsort-backend:dev
+    environment:
+      DROPSORT_MODE: api
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+  worker:
+    image: dropsort-backend:dev
+    environment:
+      DROPSORT_MODE: worker
+
+  sftp-ingest:
+    image: dropsort-backend:dev
+    environment:
+      DROPSORT_MODE: sftp-ingest
+
+  migrate:
+    image: dropsort-backend:dev
+    environment:
+      DROPSORT_MODE: migrate
+
+  # ---------- Frontend (RESERVED - Phase 5b fills) ----------
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  sftp_incoming:
