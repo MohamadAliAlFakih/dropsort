@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { apiFetch } from "../api/client";
+import { getNetworkErrorMessage } from "../api/httpErrors";
+import { ErrorAlert } from "../components/ErrorAlert";
+import { LoadingSpinner } from "../components/LoadingSpinner";
+import { useApiErrorHandler } from "../hooks/useApiErrorHandler";
 
 type HealthJson = { status?: string };
 
@@ -8,17 +12,16 @@ export function HomePage() {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const assertOk = useApiErrorHandler({ redirectOnAuthErrors: false });
+
   async function checkHealth() {
     setLoading(true);
     setError(null);
     setResult(null);
     try {
       const res = await apiFetch("/health", { auth: false });
+      await assertOk(res);
       const text = await res.text();
-      if (!res.ok) {
-        setError(`HTTP ${res.status}: ${text || res.statusText}`);
-        return;
-      }
       let display = text;
       try {
         const json = JSON.parse(text) as HealthJson;
@@ -28,7 +31,7 @@ export function HomePage() {
       }
       setResult(display);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(getNetworkErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -46,7 +49,8 @@ export function HomePage() {
           {loading ? "Checking…" : "Check API health"}
         </button>
       </p>
-      {error ? <p className="error">{error}</p> : null}
+      {loading ? <LoadingSpinner label="Contacting API…" /> : null}
+      <ErrorAlert message={error} />
       {result ? <pre>{result}</pre> : null}
     </main>
   );
