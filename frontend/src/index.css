@@ -1,0 +1,64 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: #111;
+  background: #fafafa;
+}
+
+a {
+  color: #0b57d0;
+}
+
+main {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+}
+
+header {
+  border-bottom: 1px solid #ddd;
+  background: #fff;
+}
+
+header nav {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+header strong {
+  margin-right: auto;
+}
+
+pre {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 0.75rem 1rem;
+  overflow: auto;
+  font-size: 0.85rem;
+}
+
+button {
+  font: inherit;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+}
+
+.muted {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #a40000;
+}
