@@ -49,6 +49,25 @@ class Settings(BaseSettings):
     sftp_port: int = 2222
     vault_port: int = 8200
 
+        # --- Pipeline / local compose defaults ---
+    redis_url: str = "redis://redis:6379/0"
+    rq_queue_name: str = "classification"
+
+    minio_endpoint: str = "minio:9000"
+    minio_access_key: str = "dropsort"
+    minio_secret_key: str = "dropsort-dev-minio"
+    minio_bucket: str = "documents"
+    minio_secure: bool = False
+
+    sftp_host: str = "sftp"
+    sftp_port_internal: int = 22
+    sftp_username: str = "dropsort"
+    sftp_secret: str = "dropsort-dev-sftp"
+    sftp_watch_dir: str = "/incoming"
+    sftp_poll_interval_seconds: int = 5
+
+    pipeline_max_file_size_mb: int = 25
+    
     # --- Observability ---
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
