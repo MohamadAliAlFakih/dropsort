@@ -1,48 +1,57 @@
 import { Link, useLocation } from "react-router-dom";
+import { Button } from "../components/Button";
+import { PageHeader } from "../components/PageHeader";
 
-export  function LoginPage() {
+type LoginLocationState = {
+  from?: { pathname: string; search?: string };
+};
+
+export function LoginPage() {
   const location = useLocation();
-  const from = (location.state as { from?: Location } | null)?.from;
+  const state = location.state as LoginLocationState | null;
+  const from = state?.from;
 
   return (
-    <main>
-      <h1>Login</h1>
+    <div className="page">
+      <PageHeader
+        title="Login"
+        description="Authentication is not wired yet. When the API exposes login, this page will submit credentials and store the JWT using the shared auth helpers."
+      />
+
       {from ? (
         <p className="muted" role="status">
           Sign in to access the page you opened.{" "}
-          <Link to={from.pathname + (from.search ?? "")}>Go back</Link>
+          <Link className="inline-link" to={`${from.pathname}${from.search ?? ""}`}>
+            Go back
+          </Link>
         </p>
       ) : null}
-      <p className="muted">
-        Authentication is not wired yet. When the API exposes login, this page
-        will submit credentials and store the JWT using the shared auth helpers.
-      </p>
+
       <form
+        className="auth-form panel"
         onSubmit={(e) => {
           e.preventDefault();
         }}
       >
-        <p>
+        <div className="form-field">
           <label htmlFor="email">Email</label>
-          <br />
           <input id="email" name="email" type="email" autoComplete="username" />
-        </p>
-        <p>
+        </div>
+        <div className="form-field">
           <label htmlFor="password">Password</label>
-          <br />
           <input
             id="password"
             name="password"
             type="password"
             autoComplete="current-password"
           />
-        </p>
-        <p>
-          <button type="submit" disabled>
+        </div>
+        <div className="form-field">
+          <Button type="submit" disabled>
             Sign in (disabled)
-          </button>
-        </p>
+          </Button>
+        </div>
       </form>
-    </main>
+    </div>
   );
 }

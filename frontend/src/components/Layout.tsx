@@ -17,23 +17,30 @@ export function Layout() {
 
       <header className="site-header">
         <nav className="site-nav" aria-label="Primary">
-          <NavLink className={navLinkClass} to="/" end>
-            <strong className="site-brand">dropsort</strong>
-          </NavLink>
+          <div className="site-nav-brand">
+            <NavLink className={navLinkClass} to="/" end>
+              dropsort
+            </NavLink>
+          </div>
 
-          <NavLink className={navLinkClass} to="/" end>
-            Home
-          </NavLink>
+          <div className="site-nav-links">
+            <NavLink className={navLinkClass} to="/" end>
+              Home
+            </NavLink>
+            <NavLink className={navLinkClass} to="/login">
+              Login
+            </NavLink>
+          </div>
 
-          <NavLink className={navLinkClass} to="/login">
-            Login
-          </NavLink>
+          <span className="site-nav-spacer" aria-hidden="true" />
 
-          {token ? (
-            <Button type="button" variant="muted" onClick={logout}>
-              Log out
-            </Button>
-          ) : null}
+          <div className="site-nav-actions">
+            {token ? (
+              <Button type="button" variant="muted" onClick={logout}>
+                Log out
+              </Button>
+            ) : null}
+          </div>
         </nav>
       </header>
 

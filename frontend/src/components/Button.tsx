@@ -13,12 +13,9 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const variantClass = variant === "muted" ? "btn-muted" : "btn-primary";
+  const classes = ["btn", variantClass, className].filter(Boolean).join(" ");
   return (
-    <button
-      type={type}
-      className={["btn", variantClass, className].filter(Boolean).join(" ")}
-      {...rest}
-    >
+    <button type={type} className={classes} {...rest}>
       {children}
     </button>
   );

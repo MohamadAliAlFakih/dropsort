@@ -1,15 +1,15 @@
 type ErrorAlertProps = {
-    message: string | null;
-  };
-  
-  export function ErrorAlert({ message }: ErrorAlertProps) {
-    if (!message) {
-      return null;
-    }
-  
-    return (
-      <p className="error" role="alert">
-        {message}
-      </p>
-    );
+  message: string | null;
+};
+
+export function ErrorAlert({ message }: ErrorAlertProps) {
+  if (!message) {
+    return null;
   }
+
+  return (
+    <div className="alert alert--error" role="alert">
+      {message}
+    </div>
+  );
+}
