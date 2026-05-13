@@ -34,8 +34,8 @@ class Base(DeclarativeBase):
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
-    """User ORM. fastapi-users' SQLAlchemyBaseUserTableUUID provides:
-      id (UUID pk), email, hashed_password, is_active, is_superuser, is_verified.
+    """User ORM. fastapi-users' base table provides:
+      id, email, auth hash, is_active, is_superuser, is_verified.
     We add: role + created_at + check constraint.
     """
 

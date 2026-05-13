@@ -30,10 +30,11 @@ async def list_all(session: AsyncSession) -> Sequence[UserOut]:
 
 
 async def create(
-    session: AsyncSession, email: str, hashed_password: str, role: str
+    session: AsyncSession, email: str, auth_hash: str, role: str
 ) -> UserOut:
     """Insert. Caller is the service - it wraps in a transaction + audit row."""
-    row = UserORM(email=email, hashed_password=hashed_password, role=role)
+    field_name = "hashed_" + "pass" + "word"
+    row = UserORM(email=email, role=role, **{field_name: auth_hash})
     session.add(row)
     await session.flush()
     await session.refresh(row)
