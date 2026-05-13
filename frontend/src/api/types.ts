@@ -82,3 +82,9 @@ export type AuditEntryOut = {
   created_at: string;
   metadata_jsonb: Record<string, unknown> | null;
 };
+
+/** fastapi-users JWT `POST /auth/jwt/login` success body (see fastapi-users auth router). */
+export type JwtLoginResponse = {
+  access_token: string;
+  token_type: string;
+};
