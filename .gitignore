@@ -219,3 +219,8 @@ __marimo__/
 
 # docs
 docs - Do Not Commit/
+
+# Phases
+phases-split*
+
+.claude/
