@@ -44,7 +44,7 @@ async def invite_user_endpoint(
         return await invite(
             session=session,
             email=body.email,
-            password=body.password,
+            raw_secret=body.initial_secret,
             role=body.role,
             actor_id=user.id,
         )

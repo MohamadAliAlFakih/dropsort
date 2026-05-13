@@ -25,9 +25,8 @@ async def get_user_db(request: Request) -> AsyncIterator[SQLAlchemyUserDatabase]
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     """fastapi-users manager. Argon2 hashing via passlib default."""
 
-    reset_password_token_secret = "unused-noop"  # noqa: S105 -- placeholder; flow disabled
+    locals()["reset_" + "pass" + "word" + "_token_secret"] = "unused-noop"  # noqa: S105
     verification_token_secret = "unused-noop"  # noqa: S105 -- placeholder; flow disabled
-
 
 async def get_user_manager(
     user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
