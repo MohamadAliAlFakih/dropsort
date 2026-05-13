@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import sys
 from typing import Any
 
@@ -8,24 +9,37 @@ from redis import Redis
 from rq import Queue, Worker
 from rq.job import Job
 
-from app.core.config import get_settings
-from app.core.logging import configure_logging, get_logger
-
-# Saleh should provide the real boot checks.
 from app.classifier.boot_checks import (
     verify_classifier_present,
     verify_classifier_sha,
     verify_classifier_top1_above_threshold,
 )
-
-# Fakih should provide the real service implementation.
+from app.core.config import get_settings
+from app.core.logging import configure_logging, get_logger
 from app.services.prediction_service import mark_batch_failed
+from app.workers.db import get_worker_sessionmaker
 
 
 def run_boot_checks() -> None:
     verify_classifier_present()
     verify_classifier_sha()
     verify_classifier_top1_above_threshold()
+
+
+async def _mark_batch_failed_async(
+    *,
+    batch_external_id: str,
+    filename: str,
+    reason: str,
+) -> None:
+    sessionmaker = get_worker_sessionmaker()
+    async with sessionmaker() as session:
+        await mark_batch_failed(
+            session=session,
+            batch_external_id=batch_external_id,
+            filename=filename,
+            reason=reason,
+        )
 
 
 def handle_worker_exception(
@@ -63,12 +77,13 @@ def handle_worker_exception(
     if retries_left and retries_left > 0:
         return True
 
-    if batch_id and filename and request_id:
-        mark_batch_failed(
-            batch_id=batch_id,
-            filename=filename,
-            reason=str(exc_value),
-            request_id=request_id,
+    if batch_id and filename:
+        asyncio.run(
+            _mark_batch_failed_async(
+                batch_external_id=batch_id,
+                filename=filename,
+                reason=str(exc_value),
+            )
         )
 
         logger.error(

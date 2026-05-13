@@ -15,7 +15,6 @@ from app.infra.minio_storage import MinioStorage
 from app.infra.queue import QueueClient
 from app.infra.sftp_client import SftpClient
 
-
 SUPPORTED_EXTENSIONS = {".tif", ".tiff"}
 
 
