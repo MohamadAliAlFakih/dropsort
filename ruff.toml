@@ -4,10 +4,11 @@ target-version = "py311"
 [lint]
 select = ["E", "F", "I", "B", "ASYNC", "S"]
 # E: pycodestyle errors; F: pyflakes; I: isort; B: bugbear; ASYNC: async safety; S: bandit security
-ignore = ["S101"]  # allow `assert` in tests
+# B008 is incompatible with FastAPI's Depends(...) idiom (well-established pattern).
+ignore = ["S101", "B008"]
 
 [lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106"]   # tests may use hardcoded test creds and bare asserts
+"tests/**" = ["S101", "S105", "S106", "S603", "S607"]   # tests: hardcoded creds, bare asserts, subprocess helpers
 "alembic/versions/**" = ["E501"]         # auto-generated migrations may exceed line length
 
 [format]
