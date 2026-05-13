@@ -17,6 +17,14 @@ uv run uvicorn app.main:app --reload
 
 Then visit http://localhost:8000/health.
 
+## Frontend (Docker Compose)
+
+The **`frontend`** service in `docker-compose.yml` builds the SPA from `frontend/` and serves it with **nginx** on container port **80**. Host port **`FRONTEND_PORT`** and the build-arg **`VITE_API_BASE_URL`** are set from the root `.env` (see `.env.example`).
+
+Validation commands and rebuild notes: **[RUNBOOK.md](./RUNBOOK.md)** (sections *Frontend — Docker Compose* and *Compose validation*).
+
+Local Vite dev without Docker: **`frontend/README.md`**.
+
 ## Required docs (Phase 5)
 
 - [ARCH.md](./ARCH.md) — architecture diagram and layer walk-through
