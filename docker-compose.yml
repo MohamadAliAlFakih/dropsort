@@ -21,7 +21,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "dropsort", "-d", "dropsort"]
+      test: [ "CMD", "pg_isready", "-U", "dropsort", "-d", "dropsort" ]
       interval: 2s
       timeout: 3s
       retries: 15
@@ -34,7 +34,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 2s
       timeout: 3s
       retries: 15
@@ -50,7 +50,7 @@ services:
     ports:
       - "${VAULT_PORT:-8200}:8200"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8200/v1/sys/health"]
+      test: [ "CMD", "wget", "--quiet", "--spider", "http://127.0.0.1:8200/v1/sys/health" ]
       interval: 2s
       timeout: 3s
       retries: 15
@@ -68,7 +68,7 @@ services:
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live" ]
       interval: 2s
       timeout: 3s
       retries: 15
@@ -83,7 +83,7 @@ services:
       - sftp_incoming:/home/dropsort/incoming
     healthcheck:
       # atmoz/sftp's sh is dash (no /dev/tcp). Use pgrep to confirm sshd is running.
-      test: ["CMD-SHELL", "pgrep sshd > /dev/null"]
+      test: [ "CMD-SHELL", "pgrep sshd > /dev/null" ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -103,19 +103,57 @@ services:
 
   worker:
     image: dropsort-backend:dev
+    command: python -m app.workers.inference_worker
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
     environment:
       DROPSORT_MODE: worker
+      REDIS_URL: redis://redis:6379/0
+      RQ_QUEUE_NAME: classification
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: dropsort
+      MINIO_SECRET_KEY: dropsort-dev-minio
+      MINIO_BUCKET: documents
 
   sftp-ingest:
     image: dropsort-backend:dev
+    command: python -m app.workers.sftp_ingest
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      sftp:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
     environment:
       DROPSORT_MODE: sftp-ingest
+      REDIS_URL: redis://redis:6379/0
+      RQ_QUEUE_NAME: classification
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: dropsort
+      MINIO_SECRET_KEY: dropsort-dev-minio
+      MINIO_BUCKET: documents
+      SFTP_HOST: sftp
+      SFTP_PORT_INTERNAL: 22
+      SFTP_USERNAME: dropsort
+      SFTP_SECRET: dropsort-dev-sftp
+      SFTP_WATCH_DIR: /incoming
+      SFTP_POLL_INTERVAL_SECONDS: 5
+      PIPELINE_MAX_FILE_SIZE_MB: 25
 
   migrate:
     image: dropsort-backend:dev
     environment:
       DROPSORT_MODE: migrate
-
   # ---------- Frontend (RESERVED - Phase 5b fills) ----------
 
 volumes:
