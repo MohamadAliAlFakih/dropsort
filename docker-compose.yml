@@ -116,7 +116,7 @@ services:
     environment:
       DROPSORT_MODE: migrate
 
-  # ---------- Frontend (static SPA, nginx on container port 80) ----------
+  # ---------- Frontend (static SPA; nginx listens on container port 80) ----------
   frontend:
     build:
       context: ./frontend
