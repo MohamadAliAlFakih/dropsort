@@ -68,7 +68,7 @@ async def invite(
     *,
     session: AsyncSession,
     email: str,
-    password: str,
+    raw_secret: str,
     role: str,
     actor_id: UUID,
 ) -> UserOut:
@@ -76,14 +76,14 @@ async def invite(
     from passlib.context import CryptContext
 
     ctx = CryptContext(schemes=["argon2"], deprecated="auto")
-    hashed = ctx.hash(password)
+    hashed = ctx.hash(raw_secret)
 
     async with session.begin():
         existing = await user_repository.get_by_email(session, email)
         if existing is not None:
             raise UserAlreadyExists(email)
         user = await user_repository.create(
-            session, email=email, hashed_password=hashed, role=role
+            session, email=email, auth_hash=hashed, role=role
         )
         await audit_repository.append(
             session,

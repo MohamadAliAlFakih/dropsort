@@ -12,7 +12,7 @@ Role = Literal["admin", "reviewer", "auditor"]
 
 
 class UserOut(BaseModel):
-    """Returned from /me and /admin/users/*. NEVER includes hashed_password (week-4)."""
+    """Returned from /me and /admin/users/*. Never includes auth hash."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -27,7 +27,7 @@ class UserCreate(BaseModel):
     """POST /admin/users/invite body."""
 
     email: EmailStr
-    password: str  # admin sets initial password; user changes after first login
+    initial_secret: str
     role: Role
 
 
