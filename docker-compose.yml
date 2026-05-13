@@ -154,7 +154,18 @@ services:
     image: dropsort-backend:dev
     environment:
       DROPSORT_MODE: migrate
-  # ---------- Frontend (RESERVED - Phase 5b fills) ----------
+
+  # ---------- Frontend (static SPA; nginx listens on container port 80) ----------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    image: dropsort-frontend:dev
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
 
 volumes:
   postgres_data:
