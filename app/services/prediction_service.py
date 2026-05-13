@@ -144,3 +144,53 @@ async def record_prediction(
         top1_confidence=top1_confidence,
     )
     return created
+
+
+async def mark_batch_failed(
+    *,
+    session: AsyncSession,
+    batch_external_id: str,
+    filename: str,
+    reason: str,
+) -> None:
+    """Mark a batch as failed after PIPE-06 retries are exhausted.
+
+    Atomic: upsert batch -> set state='failed' -> audit row -> commit.
+    Invalidates batch caches post-commit.
+
+    Phase 4 worker calls this from its exception handler when an RQ job's
+    retry budget is exhausted.
+    """
+    from app.repositories import user_repository
+
+    async with session.begin():
+        # System actor: admin user (FK constraint requires a real user).
+        # If admin lookup fails (shouldn't happen post-revision 0002), we still
+        # mark the batch failed but skip the audit row rather than blow up.
+        admin = await user_repository.get_by_email(session, "admin@example.com")
+
+        batch = await batch_repository.upsert_external(session, batch_external_id)
+        await batch_repository.set_state(session, batch.id, "failed")
+        if admin is not None:
+            await audit_repository.append(
+                session,
+                actor_id=admin.id,
+                action="batch_state_changed",
+                target_type="batch",
+                target_id=str(batch.id),
+                metadata={
+                    "to": "failed",
+                    "filename": filename,
+                    "reason": reason[:500],
+                    "system": True,
+                },
+            )
+
+    await FastAPICache.clear(namespace="batches-list")
+    await FastAPICache.clear(namespace=f"batches-detail:{batch.id}")
+    logger.error(
+        "batch_marked_failed",
+        batch_id=str(batch.id),
+        filename=filename,
+        reason=reason[:200],
+    )

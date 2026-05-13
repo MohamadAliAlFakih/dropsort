@@ -1,15 +1,25 @@
+"""RQ inference job — second half of the SFTP -> classify -> store pipeline.
+
+Pulls the image from MinIO, runs Saleh's classifier, generates overlay, uploads it,
+then calls the service layer to write the prediction row + audit + cache invalidation.
+
+`run_classification_job` is the RQ entrypoint. RQ calls it synchronously; we bridge
+to the async service layer with `asyncio.run`. Idempotency is handled by the service
+(UNIQUE on `content_sha256`).
+"""
+
 from __future__ import annotations
+
+import asyncio
 
 import structlog
 
-from app.core.logging import get_logger
-from app.infra.minio_storage import MinioStorage
-
-# Saleh should replace/provide this module.
 from app.classifier.runtime import classify, make_overlay
-
-# Fakih should replace/provide this service implementation.
-from app.services.prediction_service import prediction_exists, record_prediction
+from app.core.logging import get_logger
+from app.domain import TopKItem
+from app.infra.minio_storage import MinioStorage
+from app.services.prediction_service import record_prediction
+from app.workers.db import get_worker_sessionmaker
 
 
 def run_classification_job(
@@ -20,6 +30,7 @@ def run_classification_job(
     content_sha256: str,
     request_id: str,
 ) -> None:
+    """Synchronous RQ entrypoint. Bridges to async service via asyncio.run."""
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(
         request_id=request_id,
@@ -36,16 +47,7 @@ def run_classification_job(
         content_sha256=content_sha256,
     )
 
-    if prediction_exists(
-        batch_id=batch_id,
-        filename=filename,
-        content_sha256=content_sha256,
-    ):
-        logger.info("classification_job_idempotent_noop")
-        return
-
     image_bytes = storage.download_bytes(object_key=object_key)
-
     prediction = classify(image_bytes)
 
     overlay_png_bytes = make_overlay(
@@ -54,23 +56,27 @@ def run_classification_job(
     )
 
     overlay_object_key = f"overlays/{batch_id}/{filename}.png"
-
     storage.upload_bytes(
         object_key=overlay_object_key,
         data=overlay_png_bytes,
         content_type="image/png",
     )
 
-    record_prediction(
-        batch_id=batch_id,
-        filename=filename,
-        content_sha256=content_sha256,
-        original_object_key=object_key,
-        overlay_object_key=overlay_object_key,
-        predicted_label=prediction.label,
-        top1_confidence=prediction.top1_confidence,
-        top5=prediction.top5,
-        request_id=request_id,
+    # Saleh's `classify` returns top5 as `list[dict]` (from runtime.py) or
+    # `list[tuple[str, float]]` (from classify.py). Normalise to TopKItem.
+    top5_items = _normalise_top5(prediction.top5)
+
+    asyncio.run(
+        _persist_prediction(
+            batch_external_id=batch_id,
+            filename=filename,
+            content_sha256=content_sha256,
+            minio_input_key=object_key,
+            minio_overlay_key=overlay_object_key,
+            label=prediction.label,
+            top1_confidence=prediction.top1_confidence,
+            top5=top5_items,
+        )
     )
 
     logger.info(
@@ -80,6 +86,46 @@ def run_classification_job(
         top1_confidence=prediction.top1_confidence,
     )
 
-# jobs.py contains the RQ job function. This is the second half of the pipeline. 
-# It downloads the image from MinIO, runs classification, 
-# creates an overlay, uploads the overlay, and records the prediction through the service layer.
+
+async def _persist_prediction(
+    *,
+    batch_external_id: str,
+    filename: str,
+    content_sha256: str,
+    minio_input_key: str,
+    minio_overlay_key: str,
+    label: str,
+    top1_confidence: float,
+    top5: list[TopKItem],
+) -> None:
+    """Acquire a worker-local DB session, call the service, return."""
+    sessionmaker = get_worker_sessionmaker()
+    async with sessionmaker() as session:
+        await record_prediction(
+            session=session,
+            batch_external_id=batch_external_id,
+            filename=filename,
+            content_sha256=content_sha256,
+            minio_input_key=minio_input_key,
+            minio_overlay_key=minio_overlay_key,
+            label=label,
+            top1_confidence=top1_confidence,
+            top5=top5,
+        )
+
+
+def _normalise_top5(top5_raw: object) -> list[TopKItem]:
+    """Accept Saleh's classifier output shape (list of tuples or list of dicts)
+    and convert to the service contract `list[TopKItem]`."""
+    items: list[TopKItem] = []
+    if not isinstance(top5_raw, list):
+        return items
+    for entry in top5_raw[:5]:
+        if isinstance(entry, tuple) and len(entry) == 2:
+            label, score = entry
+            items.append(TopKItem(label=str(label), score=float(score)))
+        elif isinstance(entry, dict):
+            label_val = entry.get("label", "")
+            score_val = entry.get("confidence", entry.get("score", 0.0)) or 0.0
+            items.append(TopKItem(label=str(label_val), score=float(score_val)))
+    return items

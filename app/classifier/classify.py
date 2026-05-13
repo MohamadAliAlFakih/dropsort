@@ -72,7 +72,7 @@ def _open_image(image_bytes: bytes) -> Image.Image:
     # Re-open after verify() — PIL exhausts the stream during verification.
     img = Image.open(io.BytesIO(image_bytes))
     if img.mode != "RGB":
-        img = img.convert("RGB")
+        img = img.convert("RGB")  # type: ignore[assignment]
     return img
 
 
@@ -87,7 +87,10 @@ def classify(image_bytes: bytes) -> Prediction:
     top5_vals, top5_indices = torch.topk(probs, k=5)
     top_idx = int(top5_indices[0])
     scores = {name: float(probs[i]) for i, name in enumerate(_CLASS_NAMES)}
-    top5 = [(_CLASS_NAMES[int(i)], float(v)) for i, v in zip(top5_indices, top5_vals)]
+    top5 = [
+        (_CLASS_NAMES[int(i)], float(v))
+        for i, v in zip(top5_indices, top5_vals, strict=False)
+    ]
     return Prediction(
         label=_CLASS_NAMES[top_idx],
         top1_confidence=float(probs[top_idx]),
@@ -104,7 +107,7 @@ def make_overlay(image_bytes: bytes, prediction: Prediction) -> bytes:
     try:
         font = ImageFont.truetype("arial.ttf", size=24)
     except OSError:
-        font = ImageFont.load_default()
+        font = ImageFont.load_default()  # type: ignore[assignment]
     bbox = draw.textbbox((0, 0), text, font=font)
     pad = 6
     rect = (
