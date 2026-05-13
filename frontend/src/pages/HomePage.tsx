@@ -7,7 +7,7 @@ import { useApiErrorHandler } from "../hooks/useApiErrorHandler";
 
 type HealthJson = { status?: string };
 
-export function HomePage() {
+export  function HomePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

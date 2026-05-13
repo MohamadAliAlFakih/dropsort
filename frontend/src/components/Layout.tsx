@@ -1,28 +1,45 @@
-import { Link, Outlet } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { Button } from "./Button";
+
+function navLinkClass({ isActive }: { isActive: boolean }): string {
+  return isActive ? "nav-link nav-link-active" : "nav-link";
+}
 
 export function Layout() {
   const { token, logout } = useAuth();
 
   return (
     <>
-      <header>
-        <nav>
-          <strong>dropsort</strong>
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
 
-          <Link to="/">Home</Link>
+      <header className="site-header">
+        <nav className="site-nav" aria-label="Primary">
+          <NavLink className={navLinkClass} to="/" end>
+            <strong className="site-brand">dropsort</strong>
+          </NavLink>
 
-          <Link to="/login">Login</Link>
+          <NavLink className={navLinkClass} to="/" end>
+            Home
+          </NavLink>
+
+          <NavLink className={navLinkClass} to="/login">
+            Login
+          </NavLink>
 
           {token ? (
-            <button type="button" onClick={logout}>
+            <Button type="button" variant="muted" onClick={logout}>
               Log out
-            </button>
+            </Button>
           ) : null}
         </nav>
       </header>
 
-      <Outlet />
+      <main id="main-content" className="site-main" tabIndex={-1}>
+        <Outlet />
+      </main>
     </>
   );
 }

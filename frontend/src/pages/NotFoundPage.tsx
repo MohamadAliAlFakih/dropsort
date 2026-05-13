@@ -1,13 +1,19 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { EmptyState } from "../components/EmptyState";
+import { PageHeader } from "../components/PageHeader";
 
-export function NotFoundPage() {
+export  function NotFoundPage() {
   return (
-    <main>
-      <h1>Not found</h1>
-      <p className="muted">No page matches this URL.</p>
-      <p>
-        <Link to="/">Back to home</Link>
-      </p>
-    </main>
+    <div className="page">
+      <PageHeader title="Not found" />
+      <EmptyState
+        title="Page not found"
+        description="No page matches this URL."
+      >
+        <NavLink to="/" className="inline-link" end>
+          Back to home
+        </NavLink>
+      </EmptyState>
+    </div>
   );
 }

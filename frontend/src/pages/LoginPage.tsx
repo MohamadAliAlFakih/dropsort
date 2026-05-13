@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 
-export function LoginPage() {
+export  function LoginPage() {
   const location = useLocation();
   const from = (location.state as { from?: Location } | null)?.from;
 

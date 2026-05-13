@@ -62,3 +62,69 @@ button {
 .error {
   color: #a40000;
 }
+
+.site-header {
+  border-bottom: 1px solid #ddd;
+  background: #fff;
+}
+
+.site-nav {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.site-main {
+  display: block;
+}
+
+.page {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #0b57d0;
+}
+
+.nav-link-active {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.btn {
+  font: inherit;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid #bbb;
+  background: #fff;
+}
+
+.btn-primary {
+  border-color: #0b57d0;
+  color: #0b57d0;
+  background: #eef4ff;
+}
+
+.btn-muted {
+  color: #333;
+}
+
+.page-header {
+  margin-bottom: 1rem;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.empty-state {
+  margin-top: 1rem;
+}
