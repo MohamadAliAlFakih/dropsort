@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-<<<<<<< HEAD
-import { apiFetch } from "../api/client";
-=======
 import { apiFetch, pathWithQuery } from "../api/client";
->>>>>>> 25de20f (Improve frontend dashboard UX and admin management flows)
 import { getNetworkErrorMessage } from "../api/httpErrors";
 import { routes } from "../api/routes";
 import type { BatchOut } from "../api/types";
@@ -16,22 +12,6 @@ import {
 } from "../components/data";
 import type { DataTableColumn } from "../components/data/DataTable";
 import { ErrorAlert } from "../components/ErrorAlert";
-<<<<<<< HEAD
-import { PageHeader } from "../components/PageHeader";
-import { StatusBadge } from "../components/data/StatusBadge";
-import { useApiErrorHandler } from "../hooks/useApiErrorHandler";
-
-const columns: DataTableColumn[] = [
-  { id: "id", label: "Id" },
-  { id: "state", label: "State" },
-  { id: "predictions", label: "Predictions" },
-  { id: "created", label: "Created" },
-];
-
-export function BatchesPage() {
-  const assertOk = useApiErrorHandler({ redirectOnAuthErrors: true });
-  const [loading, setLoading] = useState(true);
-=======
 import { ListRefreshingHint } from "../components/ListRefreshingHint";
 import { PageHeader } from "../components/PageHeader";
 import { RefreshButton } from "../components/RefreshButton";
@@ -56,23 +36,15 @@ export function BatchesPage() {
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
   const [pending, setPending] = useState(true);
->>>>>>> 25de20f (Improve frontend dashboard UX and admin management flows)
   const [rows, setRows] = useState<BatchOut[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-<<<<<<< HEAD
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await apiFetch(routes.batches);
-=======
     setPending(true);
     setError(null);
     try {
       const path = pathWithQuery(routes.batches, { offset, limit });
       const res = await apiFetch(path);
->>>>>>> 25de20f (Improve frontend dashboard UX and admin management flows)
       await assertOk(res);
       const data = (await res.json()) as BatchOut[];
       setRows(data);
@@ -80,36 +52,14 @@ export function BatchesPage() {
       setRows(null);
       setError(getNetworkErrorMessage(e));
     } finally {
-<<<<<<< HEAD
-      setLoading(false);
-    }
-  }, [assertOk]);
-=======
       setPending(false);
     }
   }, [assertOk, offset, limit]);
->>>>>>> 25de20f (Improve frontend dashboard UX and admin management flows)
 
   useEffect(() => {
     void load();
   }, [load]);
 
-<<<<<<< HEAD
-  return (
-    <div className="page">
-      <PageHeader title="Batches" description="GET /batches (default offset and limit)." />
-
-      <PageSection title="All batches">
-        {loading ? <DataSkeleton rows={6} columns={4} /> : null}
-        <ErrorAlert message={error} />
-
-        {!loading && rows && rows.length === 0 ? (
-          <DataEmpty title="No batches" description="The list is empty." />
-        ) : null}
-
-        {!loading && rows && rows.length > 0 ? (
-          <DataTable columns={columns} aria-label="Batches">
-=======
   const showSkeleton = pending && rows === null;
 
   return (
@@ -137,7 +87,6 @@ export function BatchesPage() {
 
         {!showSkeleton && rows && rows.length > 0 ? (
           <DataTable className="data-table--interactive" columns={columns} aria-label="Document batches">
->>>>>>> 25de20f (Improve frontend dashboard UX and admin management flows)
             {rows.map((b) => (
               <tr key={b.id}>
                 <td>
@@ -146,23 +95,14 @@ export function BatchesPage() {
                   </Link>
                 </td>
                 <td>
-<<<<<<< HEAD
-                  <StatusBadge tone="neutral">{b.state}</StatusBadge>
-                </td>
-                <td>{b.prediction_count}</td>
-                <td>{b.created_at}</td>
-=======
                   <StatusBadge tone={batchStateTone(b.state)}>{batchStateLabel(b.state)}</StatusBadge>
                 </td>
                 <td className="data-table-cell--numeric">{b.prediction_count}</td>
                 <td className="data-table-cell-muted">{b.updated_at}</td>
->>>>>>> 25de20f (Improve frontend dashboard UX and admin management flows)
               </tr>
             ))}
           </DataTable>
         ) : null}
-<<<<<<< HEAD
-=======
 
         {rows ? (
           <PaginationControls
@@ -179,7 +119,6 @@ export function BatchesPage() {
             }}
           />
         ) : null}
->>>>>>> 25de20f (Improve frontend dashboard UX and admin management flows)
       </PageSection>
     </div>
   );
