@@ -4,98 +4,98 @@
     "sha256": "67791c916b542fee5da31db291b5d16432729c044a3ce52c33a5a0b6b8acc66e",
     "true_label": "scientific_publication",
     "pred_label": "scientific_publication",
-    "top1_confidence": 0.9982750415802002
+    "top1_confidence": 0.9982705116271973
   },
   {
     "filename": "46_memo_1016.tif",
     "sha256": "c3a4ef8cd7bc879139c98ff7c993de2c2f2eff3c8540a8231e2a6b5ba9d418f0",
     "true_label": "memo",
     "pred_label": "memo",
-    "top1_confidence": 0.9991126656532288
+    "top1_confidence": 0.9991140961647034
   },
   {
     "filename": "02_letter_1472.tif",
     "sha256": "e37dc0765a7f9dc123a2a85d944629f4d4abc7e0942de45ab4e2094653ca91e5",
     "true_label": "letter",
     "pred_label": "letter",
-    "top1_confidence": 0.1655743569135666
+    "top1_confidence": 0.16552899777889252
   },
   {
     "filename": "34_invoice_1620.tif",
     "sha256": "85e4561b5b45681d2be144ecf3c7202e91124ab92bbba15ba06f81c113561282",
     "true_label": "invoice",
     "pred_label": "invoice",
-    "top1_confidence": 0.9998493194580078
+    "top1_confidence": 0.9998489618301392
   },
   {
     "filename": "45_memo_1777.tif",
     "sha256": "da8be2baa2934e9e97ebeeef3381963cbaf7803e8a9fa01d1dfbddeca037889b",
     "true_label": "memo",
     "pred_label": "memo",
-    "top1_confidence": 0.999334990978241
+    "top1_confidence": 0.9993298053741455
   },
   {
     "filename": "11_handwritten_1949.tif",
     "sha256": "f89134f0bcc1950ac045bd0cb53bccb93da47c45f3430f7e7e6baf55168eb0c6",
     "true_label": "handwritten",
     "pred_label": "handwritten",
-    "top1_confidence": 0.34443750977516174
+    "top1_confidence": 0.34197142720222473
   },
   {
     "filename": "28_news_article_2354.tif",
     "sha256": "9e523cdc60e7414145e2e1a40e6b4ca3f1701db038732ee174908147511d19a3",
     "true_label": "news_article",
     "pred_label": "news_article",
-    "top1_confidence": 0.9999316930770874
+    "top1_confidence": 0.9999319314956665
   },
   {
     "filename": "38_presentation_2930.tif",
     "sha256": "72ef54c35ea4e1a80a2aafd886959089cdfaab56b5fe4bc1c4b4a6c7fc92225f",
     "true_label": "presentation",
     "pred_label": "presentation",
-    "top1_confidence": 0.3648262023925781
+    "top1_confidence": 0.3643333315849304
   },
   {
     "filename": "26_file_folder_2931.tif",
     "sha256": "ba102f4fbb6edf95c3b45269415c969bcfecdf42f065a36433a86cce05c2eb2b",
     "true_label": "file_folder",
     "pred_label": "file_folder",
-    "top1_confidence": 0.4057072699069977
+    "top1_confidence": 0.40605729818344116
   },
   {
     "filename": "32_budget_4823.tif",
     "sha256": "68c9691f210ab8ab17e661576ea27317aca54f882830ba1e866295d2464c90b8",
     "true_label": "budget",
     "pred_label": "budget",
-    "top1_confidence": 0.2635481655597687
+    "top1_confidence": 0.2643231749534607
   },
   {
     "filename": "13_advertisement_5628.tif",
     "sha256": "add7515523b13dc36f6222107ac8cf3f04c5336b8e172d598cc52e9de89d9d6c",
     "true_label": "advertisement",
     "pred_label": "advertisement",
-    "top1_confidence": 0.9999755620956421
+    "top1_confidence": 0.9999752044677734
   },
   {
     "filename": "03_form_6581.tif",
     "sha256": "39d9ee9fb7cbda2e5a0a243712a6c0bb1dfef973796781ffad8ae6eda40888d5",
     "true_label": "form",
     "pred_label": "form",
-    "top1_confidence": 0.9993999004364014
+    "top1_confidence": 0.9993985891342163
   },
   {
     "filename": "01_letter_7778.tif",
     "sha256": "6d78082de75415edc687034519f78e01ba7d03f65d7f2dbf3cdedebb2232ad51",
     "true_label": "letter",
     "pred_label": "letter",
-    "top1_confidence": 0.9994903802871704
+    "top1_confidence": 0.9994922876358032
   },
   {
     "filename": "30_budget_9355.tif",
     "sha256": "605bfba43a131cd09b39cd574d9af76d0303461f4a8eae36652195a5b83b399b",
     "true_label": "budget",
     "pred_label": "budget",
-    "top1_confidence": 0.9997428059577942
+    "top1_confidence": 0.9997416138648987
   },
   {
     "filename": "21_specification_9712.tif",
@@ -109,14 +109,14 @@
     "sha256": "ce930449bf4d2a46474bf454f74f759c06bb8f6a4a9c27834a9b7758830f870c",
     "true_label": "questionnaire",
     "pred_label": "questionnaire",
-    "top1_confidence": 0.9999560117721558
+    "top1_confidence": 0.9999561309814453
   },
   {
     "filename": "15_scientific_report_11498.tif",
     "sha256": "958290692f195d295db1d6e044143cf6edfff03ff717986396ae652955c47684",
     "true_label": "scientific_report",
     "pred_label": "scientific_report",
-    "top1_confidence": 0.9994807839393616
+    "top1_confidence": 0.9994753003120422
   },
   {
     "filename": "39_questionnaire_11661.tif",
@@ -130,119 +130,119 @@
     "sha256": "c5740882b18e12e5493a5b23ac680f334f7fd96b1517c9f574ae2ba0dcc1019a",
     "true_label": "specification",
     "pred_label": "specification",
-    "top1_confidence": 0.9999620914459229
+    "top1_confidence": 0.9999622106552124
   },
   {
     "filename": "14_advertisement_13032.tif",
     "sha256": "1faace369ebab2ddc2059ee3a744bc1213500c117c1d2e3cb08389571d63c5db",
     "true_label": "advertisement",
     "pred_label": "advertisement",
-    "top1_confidence": 0.2554776668548584
+    "top1_confidence": 0.25439202785491943
   },
   {
     "filename": "44_resume_13521.tif",
     "sha256": "1c913791501ec054ffd3941681c70935c540d2df48cda6f566998b78b4bd05be",
     "true_label": "resume",
-    "pred_label": "resume",
-    "top1_confidence": 0.26827120780944824
+    "pred_label": "presentation",
+    "top1_confidence": 0.26703307032585144
   },
   {
     "filename": "18_scientific_publication_13722.tif",
     "sha256": "298d21e970b8e3e9119fb490bc129aa09e419fd9e035fc53f6bb8580941dbe9d",
     "true_label": "scientific_publication",
     "pred_label": "scientific_publication",
-    "top1_confidence": 0.9992921352386475
+    "top1_confidence": 0.9992928504943848
   },
   {
     "filename": "00_letter_13841.tif",
     "sha256": "beb6a55ebe3ee66d2aa7f6a233923fe234628c90f56de9851e83a17e579ad871",
     "true_label": "letter",
     "pred_label": "letter",
-    "top1_confidence": 0.9995167255401611
+    "top1_confidence": 0.999518632888794
   },
   {
     "filename": "10_handwritten_14937.tif",
     "sha256": "3ed7a17d61caa55363f40febd6f1ee3351a84320d600ddd8998509d981b63cb0",
     "true_label": "handwritten",
     "pred_label": "handwritten",
-    "top1_confidence": 0.9995394945144653
+    "top1_confidence": 0.9995365142822266
   },
   {
     "filename": "37_presentation_15962.tif",
     "sha256": "61a918f4b6b8c02d3a7da5fc02a90244ad37e321b03461348a03a14b39b3dd83",
     "true_label": "presentation",
     "pred_label": "presentation",
-    "top1_confidence": 0.997718870639801
+    "top1_confidence": 0.9977141618728638
   },
   {
     "filename": "20_scientific_publication_16485.tif",
     "sha256": "f8f7d56867b1a4017a6ad2b83b9e266ff7b087760ce3c40460cdf031f2633412",
     "true_label": "scientific_publication",
     "pred_label": "scientific_publication",
-    "top1_confidence": 0.41468536853790283
+    "top1_confidence": 0.41332072019577026
   },
   {
     "filename": "08_email_17958.tif",
     "sha256": "ba985bb50c20d787522233fe28d269147264a2daa9894ee82e31062559f34afa",
     "true_label": "email",
     "pred_label": "email",
-    "top1_confidence": 0.4161241352558136
+    "top1_confidence": 0.4147775173187256
   },
   {
     "filename": "04_form_20415.tif",
     "sha256": "5217a71af4a169c29e12e2c82b6bb962a35295053be5cc65a8a5af741859f1ff",
     "true_label": "form",
     "pred_label": "form",
-    "top1_confidence": 0.9993932247161865
+    "top1_confidence": 0.9993917942047119
   },
   {
     "filename": "31_budget_21723.tif",
     "sha256": "949eddbc63410adda385b7512f5d8c7bb5e8cf66dc404314581966edf4291e85",
     "true_label": "budget",
     "pred_label": "budget",
-    "top1_confidence": 0.9997279047966003
+    "top1_confidence": 0.9997294545173645
   },
   {
     "filename": "48_scientific_report_22955.tif",
     "sha256": "7eab860081c9fac9ab1d0d142955f29bcb1a86f732a9c9814a02afdd9d58bd28",
     "true_label": "scientific_report",
     "pred_label": "scientific_report",
-    "top1_confidence": 0.23565976321697235
+    "top1_confidence": 0.2355831265449524
   },
   {
     "filename": "36_presentation_23878.tif",
     "sha256": "8b030891011d1443a2b52f97dd692b948281fe8ff2879e5e671d3c8b64712f9f",
     "true_label": "presentation",
     "pred_label": "presentation",
-    "top1_confidence": 0.9977089166641235
+    "top1_confidence": 0.997708797454834
   },
   {
     "filename": "07_email_24601.tif",
     "sha256": "de3a7829e03efedfb6cbb06f1416d33198cd9eba00f9f3f6a83261e493e371b3",
     "true_label": "email",
     "pred_label": "email",
-    "top1_confidence": 0.9999394416809082
+    "top1_confidence": 0.9999393224716187
   },
   {
     "filename": "05_form_25259.tif",
     "sha256": "ce56c0a2ef653e2a494c6e452f93b9c96eec3eb63f9f67122bffbe02194acee9",
     "true_label": "form",
     "pred_label": "form",
-    "top1_confidence": 0.4490795433521271
+    "top1_confidence": 0.44945788383483887
   },
   {
     "filename": "35_invoice_25771.tif",
     "sha256": "44e64d57d98a0df87c5c2e16c59a79b15856c98e10c85f0e1ccfbe7d15df4dd9",
     "true_label": "invoice",
     "pred_label": "invoice",
-    "top1_confidence": 0.4976634383201599
+    "top1_confidence": 0.49861931800842285
   },
   {
     "filename": "06_email_26865.tif",
     "sha256": "2395ff3d2849c643339e18e56804e411577c0b455c313f5b28295533ebac6c65",
     "true_label": "email",
     "pred_label": "email",
-    "top1_confidence": 0.9999524354934692
+    "top1_confidence": 0.9999525547027588
   },
   {
     "filename": "12_advertisement_26898.tif",
@@ -256,14 +256,14 @@
     "sha256": "9f74a02fe09d62ed28ffab16b5694f088747366c1e5584ef290a8623adb6954c",
     "true_label": "questionnaire",
     "pred_label": "questionnaire",
-    "top1_confidence": 0.43943092226982117
+    "top1_confidence": 0.4386984705924988
   },
   {
     "filename": "16_scientific_report_27488.tif",
     "sha256": "120b2593a2bb88e11b7286c46af0787ff19c98b3399f16ccdd904ae54b4764c6",
     "true_label": "scientific_report",
     "pred_label": "scientific_report",
-    "top1_confidence": 0.9994267225265503
+    "top1_confidence": 0.9994230270385742
   },
   {
     "filename": "43_resume_28153.tif",
@@ -277,14 +277,14 @@
     "sha256": "65ce403f63a1a653921d29a4008929fb9824f605c29da3cc6906c40b499ced12",
     "true_label": "news_article",
     "pred_label": "news_article",
-    "top1_confidence": 0.4292362928390503
+    "top1_confidence": 0.4308367967605591
   },
   {
     "filename": "33_invoice_29251.tif",
     "sha256": "9995d71196eca4c581f866f763031cc8b60d7b780b6520c094c4f92ccf52aac0",
     "true_label": "invoice",
     "pred_label": "invoice",
-    "top1_confidence": 0.9998683929443359
+    "top1_confidence": 0.9998682737350464
   },
   {
     "filename": "42_resume_29830.tif",
@@ -298,42 +298,42 @@
     "sha256": "b76248d073066fb6faab306438e759b8cc70f07a669ee8b35edfbebbfb7a04a8",
     "true_label": "file_folder",
     "pred_label": "file_folder",
-    "top1_confidence": 0.9999023675918579
+    "top1_confidence": 0.9999030828475952
   },
   {
     "filename": "17_scientific_report_31456.tif",
     "sha256": "d42279b1634912caa0e3810fd622da9acb3019088b973f30d447955331e071db",
     "true_label": "scientific_report",
     "pred_label": "scientific_report",
-    "top1_confidence": 0.3251439929008484
+    "top1_confidence": 0.324690580368042
   },
   {
     "filename": "23_specification_31504.tif",
     "sha256": "af35f26854a104799077b030380d46204403575e3e108160760e0de4037dc07f",
     "true_label": "specification",
     "pred_label": "specification",
-    "top1_confidence": 0.24938371777534485
+    "top1_confidence": 0.24911998212337494
   },
   {
     "filename": "09_handwritten_31850.tif",
     "sha256": "abe7b331f65e98d5fb7de6c86bbf0116281d34c71e3f90619e001f11bf3de00e",
     "true_label": "handwritten",
     "pred_label": "handwritten",
-    "top1_confidence": 0.9996204376220703
+    "top1_confidence": 0.9996187686920166
   },
   {
     "filename": "49_memo_32009.tif",
     "sha256": "020340fc726d87f76702931865fb3de6bfbc4fcd59a4cfcc6b48fb4331724d54",
     "true_label": "memo",
     "pred_label": "memo",
-    "top1_confidence": 0.28455254435539246
+    "top1_confidence": 0.2860702872276306
   },
   {
     "filename": "47_scientific_report_32481.tif",
     "sha256": "92aec398485b49681a96235953bfd18731f1f17145fe88a5cd010a0f05400b41",
     "true_label": "scientific_report",
-    "pred_label": "scientific_report",
-    "top1_confidence": 0.3724878430366516
+    "pred_label": "handwritten",
+    "top1_confidence": 0.3725307881832123
   },
   {
     "filename": "24_file_folder_32856.tif",
@@ -347,6 +347,6 @@
     "sha256": "09c9acc93d79983b06269227e906b723ad618a41f75e8b02761676c4203ea693",
     "true_label": "news_article",
     "pred_label": "news_article",
-    "top1_confidence": 0.9999338388442993
+    "top1_confidence": 0.9999336004257202
   }
 ]
