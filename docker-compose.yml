@@ -152,6 +152,11 @@ services:
 
   migrate:
     image: dropsort-backend:dev
+    depends_on:
+      db:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
     environment:
       DROPSORT_MODE: migrate
 

@@ -18,7 +18,7 @@ export type UserOut = {
 /** `app/domain/user.py` — UserCreate (POST /admin/users/invite) */
 export type UserCreate = {
   email: string;
-  password: string;
+  initial_secret: string;
   role: Role;
 };
 
