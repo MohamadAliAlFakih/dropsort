@@ -52,15 +52,21 @@ export async function apiFetch(
   path: string,
   init: ApiFetchOptions = {},
 ): Promise<Response> {
-  const { auth = true, headers: initHeaders, ...rest } = init;
+  const { auth = true, headers: initHeaders, cache: initCache, ...rest } = init;
   const headers = new Headers(initHeaders);
 
+  let sendsBearer = false;
   if (auth) {
     const token = getToken();
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
+      sendsBearer = true;
     }
   }
 
-  return fetch(apiUrl(path), { ...rest, headers });
+  // GET /me and other authed reads must not reuse a disk-cached response from another
+  // session (browsers may not vary the cache key on Authorization reliably).
+  const cache = initCache ?? (sendsBearer ? "no-store" : "default");
+
+  return fetch(apiUrl(path), { ...rest, headers, cache });
 }

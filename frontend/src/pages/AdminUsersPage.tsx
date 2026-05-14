@@ -22,6 +22,17 @@ import { useApiErrorHandler } from "../hooks/useApiErrorHandler";
 
 const ROLES: Role[] = ["admin", "reviewer", "auditor"];
 
+/** Primary label for the admin directory (never shows internal `removed.<uuid>@…`). */
+function adminDirectoryPrimaryLabel(u: UserOut): string {
+  if (u.deleted_at) {
+    if (u.original_email) {
+      return `Removed account (${u.original_email})`;
+    }
+    return "Removed account";
+  }
+  return u.email;
+}
+
 function RolePill({ role }: { role: Role }) {
   return <span className={`role-pill role-pill--${role}`}>{ROLE_LABELS[role]}</span>;
 }
@@ -57,7 +68,8 @@ function UserRoleEditor({ user, onUpdated }: UserRoleEditorProps) {
   const [saving, setSaving] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const locked = Boolean(user.deleted_at) || me?.id === user.id;
+  const locked =
+    Boolean(user.deleted_at) || me?.id === user.id || user.role === "admin";
 
   useEffect(() => {
     setRole(user.role);
@@ -94,14 +106,20 @@ function UserRoleEditor({ user, onUpdated }: UserRoleEditorProps) {
   return (
     <div className="user-role-toolbar">
       <label className="sr-only" htmlFor={`role-${user.id}`}>
-        Permissions for {user.email}
+        Permissions for {adminDirectoryPrimaryLabel(user)}
       </label>
       <select
         id={`role-${user.id}`}
         className="select-tool"
         value={role}
         disabled={saving || locked}
-        title={locked ? "You cannot change your own access level here, or edit a removed account." : undefined}
+        title={
+          locked
+            ? user.role === "admin"
+              ? "Administrator access cannot be changed here."
+              : "You cannot change your own access level here, or edit a removed account."
+            : undefined
+        }
         onChange={(ev) => setRole(ev.target.value as Role)}
       >
         {ROLES.map((r) => (
@@ -136,9 +154,10 @@ function UserAccessToolbar({ user, onUpdated, onRequestRemove }: UserAccessToolb
 
   const isSelf = me?.id === user.id;
   const removed = Boolean(user.deleted_at);
+  const isTargetAdmin = user.role === "admin";
 
   async function setActive(next: boolean) {
-    if (removed || isSelf) {
+    if (removed || isSelf || isTargetAdmin) {
       return;
     }
     setBusy(true);
@@ -165,6 +184,12 @@ function UserAccessToolbar({ user, onUpdated, onRequestRemove }: UserAccessToolb
 
   if (isSelf) {
     return <span className="muted user-access-toolbar__note">Use another administrator to change your access.</span>;
+  }
+
+  if (isTargetAdmin) {
+    return (
+      <span className="muted user-access-toolbar__note">Administrator accounts cannot be deactivated or removed here.</span>
+    );
   }
 
   return (
@@ -373,7 +398,7 @@ export function AdminUsersPage() {
           <DataTable className="data-table--interactive admin-users-table" columns={columns} aria-label="Team members">
             {rows.map((u) => (
               <tr key={u.id} className={u.deleted_at ? "admin-user-row admin-user-row--removed" : !u.is_active ? "admin-user-row admin-user-row--inactive" : undefined}>
-                <td className="data-table-cell-strong">{u.email}</td>
+                <td className="data-table-cell-strong">{adminDirectoryPrimaryLabel(u)}</td>
                 <td>
                   <RolePill role={u.role} />
                 </td>
@@ -417,8 +442,8 @@ export function AdminUsersPage() {
               Remove account
             </h2>
             <p className="modal-card__body">
-              This permanently removes <strong>{removeTarget.email}</strong> from the directory, revokes sign-in, and
-              frees the address for a new invite. Audit history is preserved.
+              This permanently removes <strong>{adminDirectoryPrimaryLabel(removeTarget)}</strong> from the directory,
+              revokes sign-in, and frees the address for a new invite. Audit history is preserved.
             </p>
             <ErrorAlert message={removeError} />
             <div className="modal-card__actions">

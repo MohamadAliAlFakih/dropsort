@@ -15,6 +15,8 @@ export type UserOut = {
   created_at: string;
   /** ISO 8601 when the account was soft-deleted (admin directory removal). */
   deleted_at?: string | null;
+  /** Real address before removal; internal `email` becomes a placeholder after soft-delete. */
+  original_email?: string | null;
 };
 
 /** `app/domain/user.py` — UserCreate (POST /admin/users/invite) */

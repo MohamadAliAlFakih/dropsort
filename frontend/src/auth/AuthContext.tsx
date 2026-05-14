@@ -35,6 +35,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearToken();
     } else {
       persistToken(next);
+      // New credentials: drop previous /me immediately so Layout never shows the last
+      // user's role until the next /me completes (pairs with token-only localStorage).
+      setMe(null);
     }
     setTokenState(getToken());
   }, []);
@@ -43,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken();
     setTokenState(null);
     setMe(null);
+    setMeLoading(false);
     navigate("/login", { replace: true });
   }, [navigate]);
 
