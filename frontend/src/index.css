@@ -578,6 +578,14 @@ code {
   margin-top: var(--space-5);
 }
 
+.batch-upload-bar__hint {
+  margin: 0 0 var(--space-3);
+}
+
+.batch-upload-bar__input {
+  max-width: 100%;
+}
+
 .empty-state-title {
   margin: 0 0 var(--space-2);
   font-size: 1.05rem;

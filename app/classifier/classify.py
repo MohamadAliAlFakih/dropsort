@@ -55,7 +55,9 @@ class Prediction:
 @lru_cache(maxsize=1)
 def _load_model() -> torch.nn.Module:
     model = convnext_tiny(weights=None, num_classes=len(_CLASS_NAMES))
-    state = torch.load(_WEIGHTS_FILE, map_location="cpu", weights_only=True)
+    # Full checkpoints from training often include non-tensor metadata; PyTorch 2.6+
+    # defaults weights_only=True which rejects them. Weights are a trusted repo artifact.
+    state = torch.load(_WEIGHTS_FILE, map_location="cpu", weights_only=False)
     model.load_state_dict(state)
     model.eval()
     return model

@@ -96,8 +96,24 @@ services:
       context: .
       dockerfile: Dockerfile
     image: dropsort-backend:dev
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
     environment:
       DROPSORT_MODE: api
+      REDIS_URL: redis://redis:6379/0
+      RQ_QUEUE_NAME: classification
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: dropsort
+      MINIO_SECRET_KEY: dropsort-dev-minio
+      MINIO_BUCKET: documents
+      PIPELINE_MAX_FILE_SIZE_MB: 25
     ports:
       - "${API_PORT:-8000}:8000"
 

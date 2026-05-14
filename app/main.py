@@ -74,7 +74,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # BOOT-02: Casbin policy table must be non-empty + enforcer loaded.
     sync_pg_url = _to_sync_url(secrets.postgres_url)
-    print(sync_pg_url)
     rows = policy_row_count(sync_pg_url)
     if rows == 0:
         msg = "BOOT-02: casbin_rule table is empty. Did you run `alembic upgrade head`?"

@@ -19,6 +19,7 @@ from app.core.logging import get_logger
 from app.domain import TopKItem
 from app.infra.minio_storage import MinioStorage
 from app.services.prediction_service import record_prediction
+from app.workers.cache_context import worker_cache_context
 from app.workers.db import get_worker_sessionmaker
 
 
@@ -99,19 +100,20 @@ async def _persist_prediction(
     top5: list[TopKItem],
 ) -> None:
     """Acquire a worker-local DB session, call the service, return."""
-    sessionmaker = get_worker_sessionmaker()
-    async with sessionmaker() as session:
-        await record_prediction(
-            session=session,
-            batch_external_id=batch_external_id,
-            filename=filename,
-            content_sha256=content_sha256,
-            minio_input_key=minio_input_key,
-            minio_overlay_key=minio_overlay_key,
-            label=label,
-            top1_confidence=top1_confidence,
-            top5=top5,
-        )
+    async with worker_cache_context():
+        sessionmaker = get_worker_sessionmaker()
+        async with sessionmaker() as session:
+            await record_prediction(
+                session=session,
+                batch_external_id=batch_external_id,
+                filename=filename,
+                content_sha256=content_sha256,
+                minio_input_key=minio_input_key,
+                minio_overlay_key=minio_overlay_key,
+                label=label,
+                top1_confidence=top1_confidence,
+                top5=top5,
+            )
 
 
 def _normalise_top5(top5_raw: object) -> list[TopKItem]:
