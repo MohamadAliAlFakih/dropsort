@@ -56,6 +56,7 @@ async def map_user_display_labels(session: AsyncSession, user_ids: set[UUID]) ->
     """Map user id -> email for audit enrichment (GET /audit)."""
     if not user_ids:
         return {}
-    stmt = select(UserORM.id, UserORM.email).where(UserORM.id.in_(user_ids))
+    t = UserORM.__table__
+    stmt = select(t.c.id, t.c.email).where(t.c.id.in_(user_ids))
     result = await session.execute(stmt)
     return {row[0]: str(row[1]) for row in result.all()}
