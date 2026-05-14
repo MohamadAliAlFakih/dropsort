@@ -14,7 +14,7 @@ import asyncio
 
 import structlog
 
-from app.classifier.runtime import classify, make_overlay
+from app.classifier.classify import classify, make_overlay
 from app.core.logging import get_logger
 from app.domain import TopKItem
 from app.infra.minio_storage import MinioStorage

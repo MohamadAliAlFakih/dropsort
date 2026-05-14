@@ -21,6 +21,75 @@ Developers and presenters running the project on a laptop. Infra/UI maintainer: 
 
 Follow the root **README.md** for the current recommended command sequence. `TODO(team):` replace this section with a single canonical path when `docker compose up` runs the full stack end-to-end.
 
+## Vault seeding (REQUIRED before first `alembic upgrade head`)
+
+Vault dev mode starts empty. The backend lifespan + the Alembic admin seed both fail
+without these keys. Run after `docker compose up -d vault` and before any backend boot
+or migration:
+
+```bash
+# 1) Admin seed used by Alembic revision 0002 to create the initial admin user.
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=dropsort-dev-token \
+  dropsort-vault-1 vault kv put secret/admin/initial_password value=<choose-a-password>
+
+# 2) JWT signing key. Generate a fresh 64-char token.
+SIGNING_KEY=$(uv run python -c "import secrets; print(secrets.token_urlsafe(64))")
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=dropsort-dev-token \
+  dropsort-vault-1 vault kv put secret/jwt signing_key="$SIGNING_KEY"
+
+# 3) Postgres connection URL (async driver for the API; psycopg2 derived in code).
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=dropsort-dev-token \
+  dropsort-vault-1 vault kv put secret/postgres \
+  url='postgresql+asyncpg://dropsort:dropsort-dev@db:5432/dropsort'
+
+# 4) Redis URL (used by fastapi-cache2 + fastapi-limiter + RQ).
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=dropsort-dev-token \
+  dropsort-vault-1 vault kv put secret/redis url='redis://redis:6379/0'
+
+# 5) MinIO credentials.
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=dropsort-dev-token \
+  dropsort-vault-1 vault kv put secret/minio \
+  root_user=dropsort root_password=dropsort-dev-minio
+
+# 6) SFTP credentials.
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=dropsort-dev-token \
+  dropsort-vault-1 vault kv put secret/sftp \
+  user=dropsort password=dropsort-dev-sftp
+
+# Verify all keys present:
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=dropsort-dev-token \
+  dropsort-vault-1 vault kv list secret/
+# Expected output: admin/, jwt, minio, postgres, redis, sftp
+```
+
+**Notes:**
+- The container name `dropsort-vault-1` matches `docker compose up`. Adjust if your
+  compose project name differs (`docker compose ps` shows actual names).
+- These values are intentionally dev defaults that match `docker-compose.yml`'s
+  hardcoded `POSTGRES_PASSWORD`/`MINIO_ROOT_PASSWORD`. Production deployments use
+  real secrets and rotated tokens.
+- If running **outside Docker** (e.g. local `uvicorn`), swap `db`/`redis`/`vault` host
+  names to `localhost` and set `VAULT_ADDR=http://localhost:8200` in your shell.
+
+## Demo: refuse-to-start (BOOT-01, BOOT-02, BOOT-03, BOOT-04)
+
+```bash
+# Vault unreachable (BOOT-01)
+docker compose stop vault
+docker compose up api          # exits with VaultUnreachable
+
+# Casbin policy table empty (BOOT-02)
+docker exec dropsort-db-1 psql -U dropsort -d dropsort -c "TRUNCATE casbin_rule;"
+docker compose up api          # exits with "BOOT-02: casbin_rule table is empty"
+
+# Classifier weights missing (BOOT-03)
+rm app/classifier/models/classifier.pt
+docker compose up api          # exits with ClassifierBootError
+
+# Model accuracy below threshold (BOOT-04)
+MIN_MODEL_TOP1=0.99 docker compose up api    # exits if model test_top1 < 0.99
+```
+
 ## Frontend — local development (no Docker)
 
 ```bash
