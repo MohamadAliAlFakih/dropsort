@@ -174,9 +174,9 @@ export function HomePage() {
           </section>
 
           <div className="health-grid" role="list">
-            {orderedHealthDepKeys(payload.deps).map((key) => (
-              <div key={key} role="listitem">
-                <ServiceHealthCard depKey={key} title={healthServiceTitle(key)} dep={payload.deps[key]} />
+            {orderedHealthDepKeys(payload.deps).map((depKey: string) => (
+              <div key={depKey} role="listitem">
+                <ServiceHealthCard depKey={depKey} title={healthServiceTitle(depKey)} dep={payload.deps[depKey]} />
               </div>
             ))}
           </div>
