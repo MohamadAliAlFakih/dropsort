@@ -28,11 +28,13 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+# No-op upgrade because Phase 1 needed a valid revision to test the migrate flow before real tables existed.
 def upgrade() -> None:
     """Intentionally empty - see module docstring."""
     pass
 
 
+# No-op downgrade so `alembic downgrade base` runs cleanly (DB-01 acceptance criterion).
 def downgrade() -> None:
     """Intentionally empty - see module docstring."""
     pass

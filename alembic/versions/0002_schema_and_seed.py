@@ -29,6 +29,7 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+# Creates all 5 core tables, seeds Casbin RBAC policies, and inserts the initial admin user (password from Vault).
 def upgrade() -> None:
     # 1) Tables
     op.create_table(
@@ -231,6 +232,7 @@ def upgrade() -> None:
     )
 
 
+# Drops everything 0002 created, in reverse order, so audit FKs unwind before their target tables disappear.
 def downgrade() -> None:
     op.drop_index("ix_audit_target", table_name="audit_log")
     op.drop_index("ix_audit_actor_created", table_name="audit_log")
@@ -247,6 +249,7 @@ def downgrade() -> None:
 # ----- Helpers (kept local to revision so the migration is self-contained) -----
 
 
+# Reads admin bootstrap password from Vault (with env override for CI) so the secret never lives in source or .env.
 def _resolve_admin_password_from_vault() -> str:
     """Read `secret/admin/initial_password` from Vault. Falls back to env var for tests/CI."""
     env_override = os.environ.get("ADMIN_INITIAL_PASSWORD")
@@ -262,6 +265,7 @@ def _resolve_admin_password_from_vault() -> str:
     return response["data"]["data"]["value"]
 
 
+# Argon2-hashes the password using the same scheme fastapi-users uses, so the seeded admin can log in via the normal auth flow.
 def _hash_password(plain: str) -> str:
     """Argon2 hash matching fastapi-users default."""
     from passlib.context import CryptContext
