@@ -13,6 +13,7 @@ export const routes = {
   me: "/me",
 
   batches: "/batches",
+  batchesUpload: "/batches/upload",
   batchDetail: (batchId: string) => `/batches/${batchId}`,
 
   predictionsRecent: "/predictions/recent",

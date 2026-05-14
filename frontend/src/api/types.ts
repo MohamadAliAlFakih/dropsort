@@ -81,6 +81,12 @@ export type BatchDetail = {
   predictions: PredictionOut[];
 };
 
+/** `app/api/batches.py` — POST /batches/upload */
+export type BatchUploadAccepted = {
+  batch: BatchOut;
+  job_id: string;
+};
+
 /** `app/domain/audit.py` — AuditEntryOut */
 export type AuditEntryOut = {
   id: string;

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState, type ChangeEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { apiFetch, pathWithQuery } from "../api/client";
 import { getNetworkErrorMessage } from "../api/httpErrors";
 import { routes } from "../api/routes";
-import type { BatchOut } from "../api/types";
+import type { BatchOut, BatchUploadAccepted } from "../api/types";
+import { useAuth } from "../auth/AuthContext";
 import {
   DataEmpty,
   DataSkeleton,
@@ -32,12 +33,18 @@ const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 25;
 
 export function BatchesPage() {
+  const navigate = useNavigate();
   const assertOk = useApiErrorHandler({ redirectOnAuthErrors: true });
+  const { me, meLoading } = useAuth();
   const [offset, setOffset] = useState(0);
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
   const [pending, setPending] = useState(true);
   const [rows, setRows] = useState<BatchOut[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uploadPending, setUploadPending] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const canUpload = Boolean(me && !meLoading && (me.role === "reviewer" || me.role === "admin"));
 
   const load = useCallback(async () => {
     setPending(true);
@@ -60,6 +67,30 @@ export function BatchesPage() {
     void load();
   }, [load]);
 
+  async function onTiffSelected(ev: ChangeEvent<HTMLInputElement>) {
+    const input = ev.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) {
+      return;
+    }
+    setUploadError(null);
+    setUploadPending(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file, file.name);
+      const res = await apiFetch(routes.batchesUpload, { method: "POST", body: fd });
+      await assertOk(res);
+      const data = (await res.json()) as BatchUploadAccepted;
+      await load();
+      navigate(`/batches/${data.batch.id}`);
+    } catch (e) {
+      setUploadError(getNetworkErrorMessage(e) || "Could not upload file.");
+    } finally {
+      setUploadPending(false);
+    }
+  }
+
   const showSkeleton = pending && rows === null;
 
   return (
@@ -69,6 +100,29 @@ export function BatchesPage() {
         description="Track document batches as they move through classification. Open a batch to review individual results."
         actions={<RefreshButton pending={pending} onClick={() => void load()} />}
       />
+
+      {canUpload ? (
+        <PageSection
+          title="Upload TIFF"
+          description="Send a single .tif or .tiff to the same classification pipeline as SFTP ingestion. After upload you are taken to the batch page; results appear automatically while the batch is still processing."
+        >
+          <div className="panel batch-upload-bar">
+            <p className="muted batch-upload-bar__hint">
+              Same MinIO path, queue, and inference worker as SFTP. Maximum file size matches server settings.
+            </p>
+            <input
+              className="batch-upload-bar__input"
+              type="file"
+              accept=".tif,.tiff,image/tiff"
+              disabled={uploadPending}
+              aria-busy={uploadPending}
+              aria-label={uploadPending ? "Uploading TIFF" : "Choose TIFF file to upload"}
+              onChange={(ev) => void onTiffSelected(ev)}
+            />
+          </div>
+          <ErrorAlert message={uploadError} />
+        </PageSection>
+      ) : null}
 
       <PageSection
         title="Batches"

@@ -17,6 +17,7 @@ from app.core.boot_checks import (
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger
 from app.services.prediction_service import mark_batch_failed
+from app.workers.cache_context import worker_cache_context
 from app.workers.db import get_worker_sessionmaker
 
 
@@ -32,14 +33,15 @@ async def _mark_batch_failed_async(
     filename: str,
     reason: str,
 ) -> None:
-    sessionmaker = get_worker_sessionmaker()
-    async with sessionmaker() as session:
-        await mark_batch_failed(
-            session=session,
-            batch_external_id=batch_external_id,
-            filename=filename,
-            reason=reason,
-        )
+    async with worker_cache_context():
+        sessionmaker = get_worker_sessionmaker()
+        async with sessionmaker() as session:
+            await mark_batch_failed(
+                session=session,
+                batch_external_id=batch_external_id,
+                filename=filename,
+                reason=reason,
+            )
 
 
 def handle_worker_exception(

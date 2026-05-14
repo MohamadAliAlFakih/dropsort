@@ -1,17 +1,18 @@
-"""Batches router. GET /batches + GET /batches/{batch_id}."""
+"""Batches router. GET /batches, POST /batches/upload, GET /batches/{batch_id}."""
 
 from __future__ import annotations
 
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi_cache.decorator import cache
 from pydantic import BaseModel
 
 from app.api.deps import CurrentUser, DbSession, require_permission
 from app.domain import BatchOut, PredictionOut
 from app.services.batch_service import BatchNotFound, get_batch, list_batches
+from app.services.batch_upload_service import UploadRejected, enqueue_browser_tiff
 
 router = APIRouter(tags=["batches"])
 
@@ -19,6 +20,45 @@ router = APIRouter(tags=["batches"])
 class BatchDetail(BaseModel):
     batch: BatchOut
     predictions: list[PredictionOut]
+
+
+class BatchUploadAccepted(BaseModel):
+    """POST /batches/upload — same pipeline as SFTP; worker calls `record_prediction`."""
+
+    batch: BatchOut
+    job_id: str
+
+
+@router.post(
+    "/batches/upload",
+    response_model=BatchUploadAccepted,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("/batches/upload", "POST"))],
+)
+async def upload_batch_tiff(
+    session: DbSession,
+    _user: CurrentUser,
+    file: UploadFile = File(..., description="Single TIFF document (.tif / .tiff)."),
+) -> BatchUploadAccepted:
+    raw_name = file.filename
+    try:
+        body = await file.read()
+    except Exception as exc:  # pragma: no cover - defensive
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Could not read upload body."
+        ) from exc
+
+    try:
+        batch, job_id = await enqueue_browser_tiff(
+            session, file_bytes=body, filename=raw_name or ""
+        )
+    except UploadRejected as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.reason,
+        ) from exc
+
+    return BatchUploadAccepted(batch=batch, job_id=job_id)
 
 
 @router.get(
@@ -45,8 +85,15 @@ def _batch_detail_key_builder(
     args: Any = (),
     kwargs: Any = None,
 ) -> str:
+    """Build Redis key compatible with `FastAPICache.clear(namespace=f"batches-detail:{id}")`.
+
+    `clear()` expands to prefix `dropsort-cache:batches-detail:{uuid}` then deletes
+    `KEYS {that}:*`. The stored key must therefore extend that prefix with a non-empty
+    suffix (e.g. `:detail`); a bare `batches-detail:{uuid}` was never matched.
+    """
     kwargs = kwargs or {}
-    return f"batches-detail:{kwargs['batch_id']}"
+    batch_id = kwargs["batch_id"]
+    return f"{namespace}:{batch_id}:detail"
 
 
 @router.get(
