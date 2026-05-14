@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiFetch } from "../api/client";
+import { routes } from "../api/routes";
 import { getNetworkErrorMessage } from "../api/httpErrors";
 import { Button } from "../components/Button";
 import { ErrorAlert } from "../components/ErrorAlert";
@@ -21,7 +22,7 @@ export function HomePage() {
     setError(null);
     setResult(null);
     try {
-      const res = await apiFetch("/health", { auth: false });
+      const res = await apiFetch(routes.health, { auth: false });
       await assertOk(res);
       const text = await res.text();
       let display = text;
@@ -43,7 +44,7 @@ export function HomePage() {
     <div className="page">
       <PageHeader
         title="Home"
-        description="Calls GET /health on the API base URL from VITE_API_BASE_URL."
+        description="Calls GET /health (via `routes.health` + `VITE_API_BASE_URL`; dev uses `/api` + Vite proxy)."
         actions={
           <Button type="button" onClick={checkHealth} disabled={loading}>
             {loading ? "Checking…" : "Check API health"}
