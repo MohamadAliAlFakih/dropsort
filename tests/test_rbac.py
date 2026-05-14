@@ -35,7 +35,7 @@ async def test_auditor_cannot_invite_users(
     r = await client.post(
         "/admin/users/invite",
         headers=_auth(auditor_token),
-        json={"email": "x@example.com", "password": "pw1234", "role": "reviewer"},
+        json={"email": "x@example.com", "initial_secret": "pw1234", "role": "reviewer"},
     )
     assert r.status_code == 403
 

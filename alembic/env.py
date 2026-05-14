@@ -39,7 +39,7 @@ def _resolve_database_url() -> str:
     explicit = os.environ.get("ALEMBIC_DATABASE_URL")
     if explicit:
         return explicit
-    return "postgresql+asyncpg://dropsort:dropsort-dev@localhost:5432/dropsort"
+    return "postgresql+asyncpg://dropsort:dropsort-dev@localhost:5433/dropsort"
 
 
 def run_migrations_offline() -> None:

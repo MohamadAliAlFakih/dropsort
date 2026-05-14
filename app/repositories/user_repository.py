@@ -50,3 +50,12 @@ async def set_role(session: AsyncSession, user_id: UUID, new_role: str) -> UserO
     await session.flush()
     await session.refresh(row)
     return UserOut.model_validate(row)
+
+
+async def map_user_display_labels(session: AsyncSession, user_ids: set[UUID]) -> dict[UUID, str]:
+    """Map user id -> email for audit enrichment (GET /audit)."""
+    if not user_ids:
+        return {}
+    stmt = select(UserORM.id, UserORM.email).where(UserORM.id.in_(user_ids))
+    result = await session.execute(stmt)
+    return {row[0]: str(row[1]) for row in result.all()}

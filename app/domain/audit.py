@@ -14,8 +14,10 @@ class AuditEntryOut(BaseModel):
 
     id: UUID
     actor_id: UUID
+    actor_email: str | None = None
     action: str
     target_type: str
     target_id: str
+    target_label: str | None = None
     created_at: datetime
     metadata_jsonb: dict[str, Any] | None

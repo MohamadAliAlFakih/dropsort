@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../api/client";
 import { routes } from "../api/routes";
 import type { UserOut } from "../api/types";
@@ -24,6 +25,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
   const [token, setTokenState] = useState<string | null>(() => getToken());
   const [me, setMe] = useState<UserOut | null>(null);
   const [meLoading, setMeLoading] = useState(false);
@@ -41,7 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearToken();
     setTokenState(null);
     setMe(null);
-  }, []);
+    navigate("/login", { replace: true });
+  }, [navigate]);
 
   const refreshMe = useCallback(async () => {
     const t = getToken();
@@ -56,6 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout();
         return;
       }
+      if (res.status === 403) {
+        setMe(null);
+        navigate("/forbidden", { replace: true });
+        return;
+      }
       if (!res.ok) {
         setMe(null);
         return;
@@ -67,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setMeLoading(false);
     }
-  }, [logout]);
+  }, [logout, navigate]);
 
   useEffect(() => {
     if (!token) {
@@ -85,6 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (res.status === 401) {
           logout();
+          return;
+        }
+        if (res.status === 403) {
+          setMe(null);
+          navigate("/forbidden", { replace: true });
           return;
         }
         if (!res.ok) {
@@ -108,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [token, logout]);
+  }, [token, logout, navigate]);
 
   const value = useMemo(
     () => ({

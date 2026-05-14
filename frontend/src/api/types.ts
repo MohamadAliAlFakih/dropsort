@@ -13,18 +13,25 @@ export type UserOut = {
   role: Role;
   is_active: boolean;
   created_at: string;
+  /** ISO 8601 when the account was soft-deleted (admin directory removal). */
+  deleted_at?: string | null;
 };
 
 /** `app/domain/user.py` — UserCreate (POST /admin/users/invite) */
 export type UserCreate = {
   email: string;
-  password: string;
+  initial_secret: string;
   role: Role;
 };
 
 /** `app/domain/user.py` — RoleChangeIn */
 export type RoleChangeIn = {
   role: Role;
+};
+
+/** `app/domain/user.py` — UserActiveIn */
+export type UserActiveIn = {
+  is_active: boolean;
 };
 
 /** `app/domain/batch.py` — BatchState */
@@ -61,7 +68,7 @@ export type PredictionOut = {
   created_at: string;
 };
 
-/** `app/domain/prediction.py` — PredictionRelabelIn (PATCH body; not used in UI yet) */
+/** `app/domain/prediction.py` — PredictionRelabelIn (PATCH /predictions/{id} body) */
 export type PredictionRelabelIn = {
   label: string;
 };
@@ -76,9 +83,13 @@ export type BatchDetail = {
 export type AuditEntryOut = {
   id: string;
   actor_id: string;
+  /** Enriched on GET /audit for display (email or removed-account label). */
+  actor_email?: string | null;
   action: string;
   target_type: string;
   target_id: string;
+  /** Enriched human-readable subject line (email, filename, batch label, etc.). */
+  target_label?: string | null;
   created_at: string;
   metadata_jsonb: Record<string, unknown> | null;
 };

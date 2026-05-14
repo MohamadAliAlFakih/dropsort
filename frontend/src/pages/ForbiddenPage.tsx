@@ -4,11 +4,11 @@ import { PageHeader } from "../components/PageHeader";
 
 export function ForbiddenPage() {
   return (
-    <div className="page">
-      <PageHeader title="Access denied" />
+    <div className="page page--narrow">
+      <PageHeader title="Access restricted" />
       <EmptyState
-        title="Forbidden"
-        description="You do not have permission to view this resource (HTTP 403)."
+        title="Not allowed"
+        description="You are signed in, but this action is not permitted for your role."
       >
         <NavLink to="/" className="inline-link" end>
           Back to home

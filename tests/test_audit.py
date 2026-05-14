@@ -31,3 +31,6 @@ async def test_role_change_writes_audit_row(
     assert len(audit_after) > count_before
     actions = [e["action"] for e in audit_after]
     assert "role_changed" in actions
+    entry = next(e for e in audit_after if e["action"] == "role_changed")
+    assert "actor_email" in entry and entry.get("actor_email")
+    assert "target_label" in entry and entry.get("target_label")

@@ -27,6 +27,22 @@ export function apiUrl(path: string): string {
   return `${base}${path}`;
 }
 
+/** Append `?key=value` for GET pagination and filters. Path must start with `/`. */
+export function pathWithQuery(
+  path: string,
+  query: Record<string, string | number>,
+): string {
+  if (!path.startsWith("/")) {
+    throw new Error(`pathWithQuery path must start with "/": ${path}`);
+  }
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    params.set(key, String(value));
+  }
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
 export type ApiFetchOptions = RequestInit & {
   /** When false, do not send Authorization. Default true. */
   auth?: boolean;
