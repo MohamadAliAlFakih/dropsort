@@ -6,12 +6,21 @@ ConvNeXt inference implementation.
 
 from __future__ import annotations
 
-from app.classifier.classify import Prediction, classify, make_overlay
-
-__all__ = ["Prediction", "classify", "make_overlay"]
 from pathlib import Path
 
 from pydantic import BaseModel
+
+from app.classifier.classify import (
+    Prediction,
+)
+from app.classifier.classify import (
+    classify as classify_impl,
+)
+from app.classifier.classify import (
+    make_overlay as make_overlay_impl,
+)
+
+__all__ = ["Prediction", "classify", "make_overlay"]
 
 _WEIGHTS_FILE = Path(__file__).resolve().parent / "models" / "classifier.pt"
 
@@ -36,9 +45,7 @@ def classify(image_bytes: bytes) -> PredictionResult:
             "Run `git lfs pull` in the repo (or copy a real classifier.pt) before inference."
         )
 
-    from app.classifier.classify import classify as convnext_classify
-
-    raw = convnext_classify(image_bytes)
+    raw = classify_impl(image_bytes)
     top5_dicts: list[dict[str, float | str]] = [
         {"label": lbl, "confidence": float(score)} for lbl, score in raw.top5
     ]
@@ -54,16 +61,15 @@ def make_overlay(
     image_bytes: bytes,
     prediction: PredictionResult,
 ) -> bytes:
-    """Temporary placeholder until the real overlay generator is wired."""
+    """Delegate to `classify.make_overlay`, adapting `PredictionResult` → `Prediction`."""
 
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        b"\x00\x00\x00\rIHDR"
-        b"\x00\x00\x00\x01"
-        b"\x00\x00\x00\x01"
-        b"\x08\x02\x00\x00\x00"
-        b"\x90wS\xde"
-        b"\x00\x00\x00\x0cIDAT"
-        b"\x08\xd7c\xf8\xff\xff?\x00\x05\xfe\x02\xfeA\xe2&\xb0"
-        b"\x00\x00\x00\x00IEND\xaeB`\x82"
+    top5_tuples: list[tuple[str, float]] = [
+        (str(d["label"]), float(d["confidence"])) for d in prediction.top5
+    ]
+    pred = Prediction(
+        label=prediction.label,
+        top1_confidence=prediction.top1_confidence,
+        top5=top5_tuples,
+        scores={},
     )
+    return make_overlay_impl(image_bytes, pred)
