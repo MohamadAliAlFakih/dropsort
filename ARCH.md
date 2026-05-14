@@ -1,48 +1,92 @@
 # Architecture (dropsort)
 
-## Scope of this document
+## Product
 
-This file describes the **intended** Week 6 architecture and what is **already in the repository**. Anything not yet merged is marked `TODO(team)`.
+dropsort is a **local, Docker Compose–oriented** document classification service: TIFFs arrive via **SFTP** or **browser upload**, an **RQ worker** runs **ConvNeXt** inference, results land in **PostgreSQL** with overlays in **MinIO**, and **authenticated users** review outcomes through the **FastAPI** API and **React** SPA.
 
-## Product overview
+## Runtime topology
 
-dropsort is a local, docker-compose–oriented document classification service: documents arrive via SFTP, a pipeline classifies them, and authenticated users review results through an API and UI. `TODO(team):` one-sentence refinement once the API surface is frozen.
+```mermaid
+flowchart LR
+  subgraph clients
+    Browser[Browser SPA]
+    SFTPc[SFTP client]
+  end
+  subgraph compose
+    FE[frontend nginx :80]
+    API[api uvicorn :8000]
+    W[worker RQ]
+    SI[sftp-ingest]
+    PG[(Postgres)]
+    RD[(Redis)]
+    V[Vault dev]
+    MN[MinIO]
+    SFTP[sftp]
+  end
+  Browser --> FE
+  Browser --> API
+  SFTPc --> SFTP
+  SI --> SFTP
+  SI --> MN
+  SI --> RD
+  API --> PG
+  API --> RD
+  API --> V
+  API --> MN
+  W --> RD
+  W --> MN
+  W --> PG
+  W --> V
+  FE -. build-time .-> API
+```
 
-## Runtime topology (target)
+**Bring-up order (Compose):** infra (`db`, `redis`, `vault`, `minio`, `sftp`) becomes healthy → **`vault-seed`** writes KV secrets → **`migrate`** runs `alembic upgrade head` → **`api`**, **`worker`**, **`sftp-ingest`** start. **`frontend`** waits until **`api`** passes its Docker **healthcheck** (`GET /health` with `ok: true`).
 
-The laptop stack is intended to include:
+Published **host** ports come from `.env` (see `.env.example`): `API_PORT` (default **8000**), `FRONTEND_PORT` (default **5173** → mapped to nginx **80** in the container).
 
-- **API** — FastAPI application (`TODO(team):` routers, auth, caching).
-- **Workers** — ingestion from SFTP and inference / queue consumers (`TODO(team):` entrypoints and boundaries per layered design).
-- **Data plane** — PostgreSQL, Redis, MinIO, SFTP, Vault (`TODO(team):` exact wiring and health/startup order in compose).
-- **Frontend** — static SPA served separately from the API.
+## Layered backend
 
-`TODO(team):` insert a diagram (Mermaid or exported image) when stable.
+| Layer | Responsibility | Code |
+|-------|------------------|------|
+| **API** (`app/api/`) | HTTP, validation, Casbin-gated dependencies, response models. **No** ad-hoc SQLAlchemy queries in routers (healthcheck uses a tiny `SELECT 1` for dependency status only). | `batches.py`, `predictions.py`, `auth.py`, `admin.py`, … |
+| **Services** (`app/services/`) | Business rules, **transactions** (`async with session.begin()`), **`FastAPICache.clear`** after writes. | `prediction_service.py`, `batch_service.py`, `user_service.py`, … |
+| **Repositories** (`app/repositories/`) | SQLAlchemy **read/write** only; no cache, no Vault. | `*_repository.py` |
+| **Infra** (`app/infra/`, `app/core/`) | Casbin enforcer, RQ queue client, MinIO adapter, Vault resolution, settings. | `casbin/`, `queue.py`, `vault.py` |
 
-## Layered backend (brief)
+**Classifier:** `app/classifier/classify.py` loads **ConvNeXt Tiny** weights from `app/classifier/models/classifier.pt` (Git LFS). `app/classifier/runtime.py` adapts output for workers. **Boot checks** (`app/classifier/boot_checks.py`) enforce weights presence, SHA match to `model_card.json`, and optional **`MIN_MODEL_TOP1`** threshold (API + worker).
 
-The Python codebase follows a fixed layering model (API → services → repositories → ORM; domain models; infra adapters). `TODO(team):` link to module-level examples once Phase 3/4 land.
+## Authentication and RBAC
 
-## Frontend (implemented baseline)
+- **fastapi-users** with **JWT** bearer transport (`POST /auth/jwt/login`). Signing key from Vault path `secret/jwt` (`signing_key`).
+- **Casbin** (`app/infra/casbin/model.conf`) with PostgreSQL adapter; policies seeded in Alembic revisions (e.g. `0002`, `0005` for `/batches/upload`).
 
-The **frontend** lives under `frontend/` and is built with:
+## Secrets
 
-- **React**, **Vite**, and **TypeScript**
-- Production image: **multi-stage Docker** build (Node build → **nginx** serving static files on port 80)
-- API base URL: **`VITE_API_BASE_URL`** (inlined at Vite build time; supplied via Docker build args / CI, not hardcoded in application source)
+All runtime secrets for the API and workers are read once from **Vault KV v2** mount `secret/` via `app/core/vault.py` (`resolve_secrets`). Paths written by **`scripts/vault-seed.sh`** (Compose `vault-seed` service):
 
-Routing and a minimal API client live in `frontend/src/`; the only guaranteed backend call in the scaffold is **`GET /health`**. `TODO(team):` extend client and pages when JWT and domain endpoints exist.
+| Path | Keys |
+|------|------|
+| `secret/admin/initial_password` | `value` — used by Alembic `0002` to hash the initial admin user |
+| `secret/jwt` | `signing_key` |
+| `secret/postgres` | `url` (`postgresql+asyncpg://…@db:5432/dropsort`) |
+| `secret/redis` | `url` |
+| `secret/minio` | `root_user`, `root_password` |
+| `secret/sftp` | `user`, `password` |
 
-## Secrets and configuration
+MinIO **endpoint and bucket** for the Python adapters also come from **Pydantic settings** / compose env (`MINIO_*`), aligned with the Vault values above.
 
-Secrets are intended to resolve from **Vault** at API/worker startup per project brief. `TODO(team):` document KV paths, seed scripts, and compose bootstrap. The frontend bundle must **not** embed server secrets; only public build-time settings such as `VITE_API_BASE_URL`.
+## CI (GitHub Actions)
 
-## CI and quality gates
+Workflow `.github/workflows/ci.yml`:
 
-`TODO(team):` document GitHub Actions jobs (lint, typecheck, image build, golden-set test, compose smoke) once merged.
+1. **Backend** — `ruff`, `mypy`, `pytest` on `tests/`, **`pytest app/classifier/eval/golden.py`**, grep gate (no literal `password` in `app/` except `vault.py`).
+2. **Docker API** — `docker build -f Dockerfile .` (requires **Git LFS** checkout for `*.pt`).
+3. **Compose smoke** — `scripts/ci_smoke.sh`: build API image, `docker compose up` core services, wait for `/health`, JWT login, TIFF upload, poll `/predictions/recent`.
+4. **Frontend** — `npm ci`, `typecheck`, `build` with `VITE_API_BASE_URL`.
 
 ## Related documents
 
-- [DECISIONS.md](./DECISIONS.md) — recorded trade-offs.
-- [RUNBOOK.md](./RUNBOOK.md) — how to run locally and demo.
+- [DECISIONS.md](./DECISIONS.md) — ADRs.
+- [RUNBOOK.md](./RUNBOOK.md) — first-time run and demos.
 - [SECURITY.md](./SECURITY.md) — secrets and review posture.
+- [LICENSES.md](./LICENSES.md) — dataset and third-party notices.

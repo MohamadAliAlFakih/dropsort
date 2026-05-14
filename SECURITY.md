@@ -1,50 +1,49 @@
-
----
-
-## `SECURITY.md`
-
-**Purpose:** Threats and practices at a level appropriate for a course project; references brief expectations without claiming they are already enforced in code.
-
-```markdown
 # Security (dropsort)
 
 ## Scope
 
-Security expectations for the Week 6 submission: secrets handling, access control, and operational hygiene. This document does **not** replace a full production threat model.
+Security expectations for the Week 6 submission: **secrets handling**, **access control**, and **operational hygiene**. This is not a full production threat model.
 
 ## Threat model (summary)
 
-- **Asset:** Document images, classification results, audit log, credentials.
-- **Adversaries:** Curious insiders, mistaken public exposure of dev ports, compromised dev laptops.
-- **Out of scope:** Nation-state attackers; production multi-tenant hardening.
+- **Assets:** Document images, classification results, audit log, credentials, model weights.
+- **Adversaries:** Curious insiders, accidental exposure of dev ports on shared networks, compromised dev laptops.
+- **Out of scope:** Nation-state attackers; multi-tenant SaaS hardening.
 
 ## Secrets
 
-- **Vault:** Project brief requires secrets to resolve from **HashiCorp Vault** for backend services. `TODO(team):` document KV version, paths, and seed procedure.
-- **Repository:** No long-lived production secrets committed. `TODO(team):` maintain grep/CI checks per brief (e.g. no passwords in `app/` outside Vault integration).
-- **Frontend:** Only **public** build-time variables (e.g. `VITE_API_BASE_URL`) belong in the SPA bundle. Never embed signing keys or database passwords in frontend env vars.
+- **Vault (required for API/worker):** All database, JWT, MinIO, and SFTP credentials used by the Python services are read at process startup from **HashiCorp Vault KV v2** (`secret/…`) via `app/core/vault.py`. The API **refuses to start** if Vault is unreachable (**BOOT-01**).
+- **Compose file:** Contains **only development defaults** (e.g. Postgres superuser password for the DB container, MinIO dev keys) so containers can become healthy. These are **not** imported into `app/` as literals for production paths.
+- **Repository policy:** CI runs a **grep gate** blocking the literal string `password` anywhere under `app/` except the canonical Vault module (`vault.py`), to discourage accidental secret commits.
+- **Frontend bundle:** May contain **`VITE_API_BASE_URL`** (public). It must **never** contain DB passwords, JWT signing keys, or Vault tokens.
 
 ## Authentication and RBAC
 
-- **Authentication:** Intended **JWT** via **fastapi-users** (`TODO(team):` endpoints and cookie/header strategy).
-- **RBAC:** **Casbin** with admin / reviewer / auditor roles (`TODO(team):` policy storage and enforcement points).
-- **Frontend:** Stores bearer token only via the scaffold’s local mechanism until login is wired; revisit storage and XSS implications when real auth ships.
+- **Authentication:** **JWT** via **fastapi-users** — `POST /auth/jwt/login` returns a bearer token.
+- **RBAC:** **Casbin** enforces `(role, resource, method)` tuples stored in PostgreSQL. The API **refuses to start** if the Casbin table is empty (**BOOT-02**).
+- **Client storage:** The SPA keeps the bearer token in **memory/local storage** (see frontend auth module); treat XSS as in scope for reviewer threat when demoing on untrusted machines.
+
+## Classifier integrity
+
+- **Weights:** Shipped under `app/classifier/models/` with **`model_card.json`** recording **`weights_sha256`**. API and inference worker **refuse to start** on missing files or SHA mismatch (**BOOT-03**).
+- **Regression:** If **`MIN_MODEL_TOP1`** is set in the environment, **`metrics.test_top1`** in the model card must meet or exceed it (**BOOT-04**); otherwise the check is skipped for frictionless local dev.
 
 ## Transport and exposure
 
-- Local compose binds services to host ports; do not forward those ports on untrusted networks without understanding the risk.
-- `TODO(team):` TLS termination story if anything beyond localhost is used.
+- Default Compose **binds to localhost-facing ports** on the host. Do not expose those ports on untrusted networks without TLS and authentication review.
+- There is **no TLS** inside the dev stack; production would terminate TLS at an edge proxy.
 
 ## Dependency and supply chain
 
-- Pin images and lockfiles where possible (`TODO(team):` policy for backend `uv.lock` and frontend lockfile).
-- Frontend production image uses official **Node** and **nginx** bases; rebuild on base image updates.
+- Backend: **`uv.lock`** pins Python dependencies.
+- Frontend: **`package-lock.json`** pins npm dependencies.
+- Container bases: official **python**, **postgres**, **redis**, **hashicorp/vault**, **minio**, **nginx**, **node** images — rebuild periodically for upstream CVEs.
 
 ## Incident response (course scale)
 
-If a dev token or test password leaks: rotate Vault dev data, rotate compose dev credentials, and force-push is **not** required for local-only tokens—coordinate with team lead.
+If a dev token leaks: rotate Vault dev data and compose defaults; coordinate with the team lead. For local-only secrets, force-push is usually unnecessary.
 
 ## References
 
-- [RUNBOOK.md](./RUNBOOK.md) — operational steps.
+- [RUNBOOK.md](./RUNBOOK.md) — operational steps and smoke test.
 - [LICENSES.md](./LICENSES.md) — dataset and third-party terms.

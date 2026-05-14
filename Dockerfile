@@ -68,7 +68,7 @@ EXPOSE 8000
 
 CMD ["sh", "-c", "case \"$DROPSORT_MODE\" in \
   api) exec uvicorn app.main:app --host 0.0.0.0 --port 8000 ;; \
-  worker) exec python -m app.workers.inference ;; \
+  worker) exec python -m app.workers.inference_worker ;; \
   sftp-ingest) exec python -m app.workers.sftp_ingest ;; \
   migrate) exec alembic upgrade head ;; \
   *) echo \"Unknown DROPSORT_MODE='$DROPSORT_MODE'\" >&2; exit 1 ;; \

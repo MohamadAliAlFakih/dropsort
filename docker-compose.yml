@@ -1,6 +1,6 @@
-# dropsort - local laptop stack.
-# Phase 1: db/redis/vault/minio/sftp come up healthy. api/worker/sftp-ingest/migrate
-# are build-only stubs (no command:) until Phase 5 fills them in.
+# dropsort — local laptop stack (Postgres, Redis, Vault, MinIO, SFTP, API, workers, SPA).
+# Boot order: infra healthy → vault-seed (KV) → migrate (Alembic) → api / worker / sftp-ingest.
+# Frontend waits for API healthcheck so nginx never serves against a down origin during bring-up.
 
 services:
 
@@ -10,9 +10,8 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      # Phase 5 swaps this to Vault-sourced. Phase 1 hardcodes a known dev value
-      # so the container becomes healthy; this is NOT a violation of VAULT-04 because
-      # it lives in compose, not in app/.
+      # Compose supplies a known dev password so the DB container becomes healthy.
+      # This is not a VAULT-04 violation: the literal lives in compose, not in app/.
       POSTGRES_USER: dropsort
       POSTGRES_PASSWORD: dropsort-dev
       POSTGRES_DB: dropsort
@@ -55,6 +54,21 @@ services:
       timeout: 3s
       retries: 15
 
+  vault-seed:
+    image: hashicorp/vault:1.18
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_DEV_ROOT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dropsort-dev-token}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-dropsort-admin-dev}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:-}
+    volumes:
+      - ./scripts/vault-seed.sh:/vault-seed.sh:ro
+    entrypoint: [ "/bin/sh", "/vault-seed.sh" ]
+    restart: "no"
+
   minio:
     image: minio/minio:latest
     restart: unless-stopped
@@ -88,9 +102,7 @@ services:
       timeout: 3s
       retries: 10
 
-  # ---------- App services (BUILD-ONLY STUBS per CONTEXT D-17) ----------
-  # Phase 5 (Shari, INFRA) adds `command:` directives and `depends_on:` graph.
-
+  # ---------- App services ----------
   api:
     build:
       context: .
@@ -105,8 +117,12 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       DROPSORT_MODE: api
+      VAULT_ADDR: http://vault:8200
+      VAULT_DEV_ROOT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dropsort-dev-token}
       REDIS_URL: redis://redis:6379/0
       RQ_QUEUE_NAME: classification
       MINIO_ENDPOINT: minio:9000
@@ -116,6 +132,18 @@ services:
       PIPELINE_MAX_FILE_SIZE_MB: 25
     ports:
       - "${API_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import http.client,json,sys; c=http.client.HTTPConnection('127.0.0.1',8000,timeout=5); c.request('GET','/health'); r=c.getresponse(); b=r.read().decode(); d=json.loads(b) if b else {}; sys.exit(0 if r.status==200 and d.get('ok') else 1)",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 36
+      start_period: 90s
 
   worker:
     image: dropsort-backend:dev
@@ -129,8 +157,12 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       DROPSORT_MODE: worker
+      VAULT_ADDR: http://vault:8200
+      VAULT_DEV_ROOT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dropsort-dev-token}
       REDIS_URL: redis://redis:6379/0
       RQ_QUEUE_NAME: classification
       MINIO_ENDPOINT: minio:9000
@@ -150,8 +182,12 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       DROPSORT_MODE: sftp-ingest
+      VAULT_ADDR: http://vault:8200
+      VAULT_DEV_ROOT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dropsort-dev-token}
       REDIS_URL: redis://redis:6379/0
       RQ_QUEUE_NAME: classification
       MINIO_ENDPOINT: minio:9000
@@ -173,8 +209,13 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+      vault-seed:
+        condition: service_completed_successfully
     environment:
       DROPSORT_MODE: migrate
+      VAULT_ADDR: http://vault:8200
+      VAULT_DEV_ROOT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dropsort-dev-token}
+    restart: "no"
 
   # ---------- Frontend (static SPA; nginx listens on container port 80) ----------
   frontend:
@@ -182,9 +223,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://127.0.0.1:8000}
     image: dropsort-frontend:dev
     restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-5173}:80"
 

@@ -6,12 +6,14 @@ on:
 
 jobs:
   backend:
-    name: Backend (ruff, mypy, pytest)
+    name: Backend (ruff, mypy, pytest, golden)
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout (with Git LFS for classifier weights)
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -32,8 +34,11 @@ jobs:
       - name: Mypy
         run: uv run mypy app
 
-      - name: Pytest
+      - name: Pytest (tests/)
         run: uv run pytest
+
+      - name: Golden replay (classifier eval)
+        run: uv run pytest app/classifier/eval/golden.py -v
 
       - name: Grep gate — no literal "password" under app/
         shell: bash
@@ -53,6 +58,42 @@ jobs:
           fi
 
           echo "Grep gate OK."
+
+  docker-api:
+    name: Docker build (API image)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with Git LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API Dockerfile
+        run: docker build -t dropsort-api:ci -f Dockerfile .
+
+  compose-smoke:
+    name: Compose smoke (health → TIFF upload → prediction)
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - docker-api
+    env:
+      ADMIN_INITIAL_PASSWORD: ci-smoke-admin-pw
+      JWT_SIGNING_KEY: ci-smoke-jwt-signing-key-thirty-two-chars-minimum!!
+    steps:
+      - name: Checkout (with Git LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Prepare .env
+        run: cp .env.example .env
+
+      - name: Run smoke script
+        run: bash scripts/ci_smoke.sh
 
   frontend:
     name: Frontend (install, typecheck, build)

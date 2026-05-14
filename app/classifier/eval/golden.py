@@ -5,8 +5,8 @@ and asserts:
   - pred_label matches expected (byte-identical string comparison)
   - top1_confidence is within 1e-6 of expected
 
-CI invokes this directly: `python -m pytest app/classifier/eval/golden.py`
-or `python app/classifier/eval/golden.py` for a standalone run.
+CI runs: `uv run pytest app/classifier/eval/golden.py` (see `.github/workflows/ci.yml`).
+Standalone: `uv run python app/classifier/eval/golden.py`
 """
 
 from __future__ import annotations
