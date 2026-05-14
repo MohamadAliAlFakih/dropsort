@@ -9,7 +9,7 @@ from redis import Redis
 from rq import Queue, Worker
 from rq.job import Job
 
-from app.classifier.boot_checks import (
+from app.core.boot_checks import (
     verify_classifier_present,
     verify_classifier_sha,
     verify_classifier_top1_above_threshold,
@@ -23,7 +23,7 @@ from app.workers.db import get_worker_sessionmaker
 def run_boot_checks() -> None:
     verify_classifier_present()
     verify_classifier_sha()
-    verify_classifier_top1_above_threshold()
+    verify_classifier_top1_above_threshold(get_settings().min_model_top1)
 
 
 async def _mark_batch_failed_async(
