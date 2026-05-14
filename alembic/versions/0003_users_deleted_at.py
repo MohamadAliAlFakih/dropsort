@@ -19,6 +19,7 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+# Adding nullable deleted_at so users can be soft-deleted without breaking audit_log FKs that reference users.id.
 def upgrade() -> None:
     op.add_column(
         "users",
@@ -26,5 +27,6 @@ def upgrade() -> None:
     )
 
 
+# Drop the column to reverse the soft-delete capability.
 def downgrade() -> None:
     op.drop_column("users", "deleted_at")

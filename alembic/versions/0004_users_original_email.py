@@ -18,9 +18,11 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+# Storing the pre-deletion email so the admin UI can still show "jane@x.com (deleted)" after soft-delete anonymises the email field.
 def upgrade() -> None:
     op.add_column("users", sa.Column("original_email", sa.String(length=320), nullable=True))
 
 
+# Drop the column to reverse the friendly-display capability.
 def downgrade() -> None:
     op.drop_column("users", "original_email")
