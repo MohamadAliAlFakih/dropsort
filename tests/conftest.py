@@ -120,7 +120,7 @@ async def _invite_and_login(
     await client.post(
         "/admin/users/invite",
         headers=auth,
-        json={"email": email, "password": password, "role": role},
+        json={"email": email, "initial_secret": password, "role": role},
     )
     users = (await client.get("/admin/users", headers=auth)).json()
     target = next((u for u in users if u["email"] == email), None)

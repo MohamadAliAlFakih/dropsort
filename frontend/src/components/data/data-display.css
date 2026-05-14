@@ -17,7 +17,7 @@
 
 .data-table-th {
   text-align: left;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-5);
   font-weight: 600;
   color: var(--color-muted);
   border-bottom: 1px solid var(--color-border);
@@ -29,9 +29,15 @@
 }
 
 .data-table-body :is(td, th) {
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--color-border);
   vertical-align: top;
+}
+
+.data-table-body td.data-table-cell--numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .data-table-body tr:last-child td {
@@ -39,7 +45,7 @@
 }
 
 .data-page-section {
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-8);
 }
 
 .data-page-section__header {
@@ -48,7 +54,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .data-page-section__title {
@@ -176,4 +182,168 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+}
+
+.data-page-section__titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.data-page-section__desc {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  max-width: 44rem;
+}
+
+.data-table-wrap.data-table--interactive .data-table-body tr {
+  transition: background var(--transition-fast, 120ms ease);
+}
+
+.data-table-wrap.data-table--interactive .data-table-body tr:hover td {
+  background: var(--color-table-hover);
+}
+
+.data-table-cell-muted {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.data-table-cell-strong {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.confidence-value {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.confidence-value--high {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+  border: 1px solid #b6e4c9;
+}
+
+.confidence-value--medium {
+  color: var(--color-warn);
+  background: var(--color-warn-bg);
+  border: 1px solid #fcd9a1;
+}
+
+.confidence-value--low {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid #f0c4c0;
+}
+
+.audit-cell-time {
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.audit-action {
+  display: inline-block;
+  font-weight: 650;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  letter-spacing: 0.01em;
+}
+
+.audit-target-line {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin-bottom: 0.15rem;
+}
+
+.audit-code {
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
+.batch-meta-dl {
+  display: grid;
+  grid-template-columns: minmax(7rem, 10rem) 1fr;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.batch-meta-dl dt {
+  margin: 0;
+  font-weight: 650;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.batch-meta-dl dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.prediction-correction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+  min-width: 12rem;
+}
+
+.prediction-correction__blocked {
+  margin: 0;
+  font-size: 0.8125rem;
+  max-width: 16rem;
+  line-height: 1.45;
+}
+
+.prediction-correction__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.prediction-correction__err {
+  font-size: 0.8125rem;
+  color: var(--color-danger);
+}
+
+.user-role-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.user-role-toolbar__err {
+  flex-basis: 100%;
+  font-size: 0.8125rem;
+  color: var(--color-danger);
+}
+
+.select-tool {
+  min-width: 8.5rem;
+  max-width: 12rem;
+  padding: var(--space-2) var(--space-3);
+  font: inherit;
+  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.select-tool:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import type { JwtLoginResponse } from "../api/types";
+import { messageFromFastApiBody } from "../api/httpErrors";
 import { useAuth } from "../auth/AuthContext";
 import { loginWithPassword } from "../auth/login";
 import { Button } from "../components/Button";
@@ -9,6 +9,12 @@ import { PageHeader } from "../components/PageHeader";
 
 type LoginLocationState = {
   from?: { pathname: string; search?: string };
+};
+
+/** fastapi-users JWT `POST /auth/jwt/login` success body. */
+type JwtLoginResponse = {
+  access_token: string;
+  token_type: string;
 };
 
 function parseJwtLoginBody(raw: unknown): JwtLoginResponse | null {
@@ -36,7 +42,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (token) {
-      navigate(from ? `${from.pathname}${from.search ?? ""}` : "/me", {
+      navigate(from ? `${from.pathname}${from.search ?? ""}` : "/settings/account", {
         replace: true,
       });
     }
@@ -57,13 +63,8 @@ export function LoginPage() {
       }
 
       if (!res.ok) {
-        const detail = (body as { detail?: unknown } | null)?.detail;
-        const msg =
-          typeof detail === "string"
-            ? detail
-            : detail !== undefined
-              ? JSON.stringify(detail)
-              : text || `HTTP ${res.status}`;
+        const fromFastApi = messageFromFastApiBody(text);
+        const msg = fromFastApi ?? (text.trim() || `HTTP ${res.status}`);
         setError(msg);
         return;
       }
@@ -75,7 +76,7 @@ export function LoginPage() {
       }
 
       setToken(parsed.access_token);
-      navigate(from ? `${from.pathname}${from.search ?? ""}` : "/me", {
+      navigate(from ? `${from.pathname}${from.search ?? ""}` : "/settings/account", {
         replace: true,
       });
     } catch (err) {
@@ -90,10 +91,10 @@ export function LoginPage() {
   }
 
   return (
-    <div className="page">
+    <div className="page page--narrow">
       <PageHeader
-        title="Login"
-        description="Sign in with the email and password issued by an administrator."
+        title="Sign in"
+        description="Sign in with the email and password your administrator provided. Access is invitation-only—there is no self-service registration."
       />
 
       {from ? (

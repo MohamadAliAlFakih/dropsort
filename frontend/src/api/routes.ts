@@ -20,7 +20,9 @@ export const routes = {
 
   adminUsers: "/admin/users",
   adminUsersInvite: "/admin/users/invite",
+  adminUser: (targetUserId: string) => `/admin/users/${targetUserId}`,
   adminUserRole: (targetUserId: string) => `/admin/users/${targetUserId}/role`,
+  adminUserActive: (targetUserId: string) => `/admin/users/${targetUserId}/active`,
 
   audit: "/audit",
 } as const;

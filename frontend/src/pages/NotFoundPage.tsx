@@ -4,11 +4,11 @@ import { PageHeader } from "../components/PageHeader";
 
 export function NotFoundPage() {
   return (
-    <div className="page">
-      <PageHeader title="Not found" />
+    <div className="page page--narrow">
+      <PageHeader title="Page not found" description="That address does not match any screen in this app." />
       <EmptyState
-        title="Page not found"
-        description="No page matches this URL."
+        title="Nothing here"
+        description="Double-check the URL, or head home and navigate from the menu."
       >
         <NavLink to="/" className="inline-link" end>
           Back to home

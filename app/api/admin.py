@@ -4,13 +4,23 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi_limiter.depends import RateLimiter
 
 from app.api.deps import CurrentUser, DbSession, require_permission
-from app.domain import RoleChangeIn, UserCreate, UserOut
+from app.domain import RoleChangeIn, UserActiveIn, UserCreate, UserOut
 from app.repositories import user_repository
-from app.services.user_service import UserAlreadyExists, UserNotFound, change_role, invite
+from app.services.user_service import (
+    CannotActOnSelf,
+    CannotManageAdministrator,
+    UserAlreadyExists,
+    UserNotFound,
+    UserRemoved,
+    change_role,
+    invite,
+    remove_user_account,
+    set_user_active,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -81,3 +91,92 @@ async def change_role_endpoint(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         ) from None
+    except UserRemoved:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        ) from None
+    except CannotActOnSelf:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot change your own access level here",
+        ) from None
+    except CannotManageAdministrator:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator accounts cannot be managed here",
+        ) from None
+
+
+@router.patch(
+    "/users/{target_user_id}/active",
+    response_model=UserOut,
+    dependencies=[
+        Depends(require_permission("/admin/users/{target_user_id}/active", "PATCH"))
+    ],
+)
+async def set_user_active_endpoint(
+    session: DbSession,
+    user: CurrentUser,
+    target_user_id: UUID,
+    body: UserActiveIn,
+) -> UserOut:
+    try:
+        return await set_user_active(
+            session=session,
+            target_user_id=target_user_id,
+            is_active=body.is_active,
+            actor_id=user.id,
+        )
+    except UserNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        ) from None
+    except UserRemoved:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        ) from None
+    except CannotActOnSelf:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot change your own access status here",
+        ) from None
+    except CannotManageAdministrator:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator accounts cannot be managed here",
+        ) from None
+
+
+@router.delete(
+    "/users/{target_user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_permission("/admin/users/{target_user_id}", "DELETE"))],
+)
+async def remove_user_endpoint(
+    session: DbSession,
+    user: CurrentUser,
+    target_user_id: UUID,
+) -> Response:
+    try:
+        await remove_user_account(
+            session=session, target_user_id=target_user_id, actor_id=user.id
+        )
+    except UserNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        ) from None
+    except UserRemoved:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        ) from None
+    except CannotActOnSelf:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot remove your own account here",
+        ) from None
+    except CannotManageAdministrator:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator accounts cannot be managed here",
+        ) from None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

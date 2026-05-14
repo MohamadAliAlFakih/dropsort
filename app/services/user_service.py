@@ -1,4 +1,4 @@
-"""User service: change_role, invite. Owns transactions + cache invalidation (API-04)."""
+"""User service: change_role, invite, lifecycle. Owns transactions + cache invalidation (API-04)."""
 
 from __future__ import annotations
 
@@ -24,6 +24,27 @@ class UserAlreadyExists(Exception):
     """Raised by `invite` when the email is already registered. Router maps to HTTP 409."""
 
 
+class CannotActOnSelf(Exception):
+    """Lifecycle or role change on the acting user's own account."""
+
+
+class CannotManageAdministrator(Exception):
+    """Target is an administrator; only non-admin accounts may be managed."""
+
+
+class UserRemoved(Exception):
+    """Target account is already soft-deleted."""
+
+
+def _require_manageable_target(target: UserOut, actor_id: UUID) -> None:
+    if target.deleted_at is not None:
+        raise UserRemoved(str(target.id))
+    if target.id == actor_id:
+        raise CannotActOnSelf()
+    if target.role == "admin":
+        raise CannotManageAdministrator()
+
+
 async def change_role(
     *,
     session: AsyncSession,
@@ -40,6 +61,7 @@ async def change_role(
         current = await user_repository.get_by_id(session, target_user_id)
         if current is None:
             raise UserNotFound(str(target_user_id))
+        _require_manageable_target(current, actor_id)
 
         updated = await user_repository.set_role(session, target_user_id, new_role)
         if updated is None:
@@ -55,13 +77,70 @@ async def change_role(
         )
     # After commit: reload Casbin policy (sync I/O in a thread) + invalidate cache
     await asyncio.to_thread(enforcer.load_policy)
-    # Invalidates ALL /me cache entries. Acceptable: /me cache is tiny and clearing
-    # the whole namespace guarantees the target user sees the new role on next call.
     await FastAPICache.clear(namespace="me")
     logger.info(
         "role_changed", target=str(target_user_id), role_from=current.role, role_to=new_role
     )
     return updated
+
+
+async def set_user_active(
+    *,
+    session: AsyncSession,
+    target_user_id: UUID,
+    is_active: bool,
+    actor_id: UUID,
+) -> UserOut:
+    async with session.begin():
+        current = await user_repository.get_by_id(session, target_user_id)
+        if current is None:
+            raise UserNotFound(str(target_user_id))
+        _require_manageable_target(current, actor_id)
+
+        updated = await user_repository.set_is_active(session, target_user_id, is_active)
+        if updated is None:
+            raise UserNotFound(str(target_user_id))
+
+        action = "user_reactivated" if is_active else "user_deactivated"
+        await audit_repository.append(
+            session,
+            actor_id=actor_id,
+            action=action,
+            target_type="user",
+            target_id=str(target_user_id),
+            metadata={"email": current.email, "is_active": is_active},
+        )
+    await FastAPICache.clear(namespace="me")
+    logger.info(action, target=str(target_user_id), is_active=is_active)
+    return updated
+
+
+async def remove_user_account(
+    *,
+    session: AsyncSession,
+    target_user_id: UUID,
+    actor_id: UUID,
+) -> None:
+    async with session.begin():
+        current = await user_repository.get_by_id(session, target_user_id)
+        if current is None:
+            raise UserNotFound(str(target_user_id))
+        _require_manageable_target(current, actor_id)
+
+        updated = await user_repository.soft_delete(session, target_user_id)
+        if updated is None:
+            raise UserNotFound(str(target_user_id))
+
+        await audit_repository.append(
+            session,
+            actor_id=actor_id,
+            action="user_deleted",
+            target_type="user",
+            target_id=str(target_user_id),
+            metadata={"prior_email": current.email},
+        )
+    await FastAPICache.clear(namespace="me")
+    logger.info("user_deleted", target=str(target_user_id))
 
 
 async def invite(

@@ -43,6 +43,20 @@ async def get_by_id(session: AsyncSession, batch_id: UUID) -> BatchOut | None:
     return BatchOut.model_validate(row) if row else None
 
 
+async def map_id_to_display_label(session: AsyncSession, batch_ids: set[UUID]) -> dict[UUID, str]:
+    if not batch_ids:
+        return {}
+    stmt = select(BatchORM.id, BatchORM.external_id).where(BatchORM.id.in_(batch_ids))
+    result = await session.execute(stmt)
+    out: dict[UUID, str] = {}
+    for bid, ext in result.all():
+        if ext:
+            out[bid] = str(ext)
+        else:
+            out[bid] = f"Batch {str(bid)[:8]}…"
+    return out
+
+
 async def upsert_external(session: AsyncSession, external_id: str) -> BatchOut:
     """Get-or-create by external_id. Worker calls this when first file in a batch lands."""
     result = await session.execute(

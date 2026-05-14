@@ -21,6 +21,8 @@ class UserOut(BaseModel):
     role: Role
     is_active: bool
     created_at: datetime
+    deleted_at: datetime | None = None
+    original_email: str | None = None
 
 
 class UserCreate(BaseModel):
@@ -35,3 +37,9 @@ class RoleChangeIn(BaseModel):
     """POST /admin/users/{id}/role body."""
 
     role: Role
+
+
+class UserActiveIn(BaseModel):
+    """PATCH /admin/users/{id}/active body."""
+
+    is_active: bool
