@@ -72,12 +72,12 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
     # --- Classifier refuse-to-start threshold (BOOT-04) ---
-    min_model_top1: float | None = Field(
-        default=None,
+    min_model_top1: float = Field(
+        default=0.75,
         description=(
-            "Refuse-to-start threshold. Phase 2 (Saleh) sets this post-Colab-eval. "
-            "Phase 1 only wires the env var; api/worker boot only checks this in Phase 3+ once "
-            "model_card.json exists."
+            "Refuse-to-start threshold for model card test_top1. "
+            "Trained ConvNeXt Tiny scored 0.791; 0.75 is the safe floor. "
+            "Override via MIN_MODEL_TOP1 env var."
         ),
     )
 

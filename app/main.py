@@ -86,7 +86,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("casbin_enforcer_loaded", policy_rows=rows)
 
     # BOOT-03 + BOOT-04: classifier weights present, SHA matches, test_top1 above threshold.
-    from app.classifier.boot_checks import (
+    from app.core.boot_checks import (
         verify_classifier_present,
         verify_classifier_sha,
         verify_classifier_top1_above_threshold,
@@ -94,7 +94,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     verify_classifier_present()
     verify_classifier_sha()
-    verify_classifier_top1_above_threshold()
+    verify_classifier_top1_above_threshold(settings.min_model_top1)
     logger.info("classifier_boot_checks_passed")
 
     logger.info(
