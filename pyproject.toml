@@ -65,3 +65,13 @@ extend-exclude = [
     "notebook",
     "*.ipynb",
 ]
+
+# uv: pull torch/torchvision from PyTorch's CPU-only index (no bundled CUDA libs).
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }

@@ -20,6 +20,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/demo" element={<Navigate to="/batches" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route
           path="/me"

@@ -309,7 +309,7 @@ export function AdminUsersPage() {
     <div className="settings-section">
       <PageHeader
         title="Team & accounts"
-        description="Provision workspace access and adjust permissions. Accounts are administrator-created only—there is no public signup. Share each temporary password through a secure channel."
+        description="Provision workspace access and adjust permissions. Accounts are administrator-created only. Share each temporary password through a secure channel."
         actions={<RefreshButton pending={listPending} onClick={() => void loadList()} />}
       />
 
@@ -390,7 +390,7 @@ export function AdminUsersPage() {
         {!showSkeleton && rows && rows.length === 0 ? (
           <DataEmpty
             title="No accounts yet"
-            description="Create the first account above. There is no self-service signup—each person is added by an administrator."
+            description="Create the first account above. There is no self-service signup; each person is added by an administrator."
           />
         ) : null}
 
