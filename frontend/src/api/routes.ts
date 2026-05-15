@@ -13,14 +13,18 @@ export const routes = {
   me: "/me",
 
   batches: "/batches",
+  batchesUpload: "/batches/upload",
   batchDetail: (batchId: string) => `/batches/${batchId}`,
 
   predictionsRecent: "/predictions/recent",
   predictionDetail: (predictionId: string) => `/predictions/${predictionId}`,
+  predictionOverlay: (predictionId: string) => `/predictions/${predictionId}/overlay`,
 
   adminUsers: "/admin/users",
   adminUsersInvite: "/admin/users/invite",
+  adminUser: (targetUserId: string) => `/admin/users/${targetUserId}`,
   adminUserRole: (targetUserId: string) => `/admin/users/${targetUserId}/role`,
+  adminUserActive: (targetUserId: string) => `/admin/users/${targetUserId}/active`,
 
   audit: "/audit",
 } as const;

@@ -1,6 +1,6 @@
 # dropsort - local laptop stack.
-# Phase 1: db/redis/vault/minio/sftp come up healthy. api/worker/sftp-ingest/migrate
-# are build-only stubs (no command:) until Phase 5 fills them in.
+# `docker compose up` brings the full stack online: postgres, redis, vault (+ vault-seed),
+# minio, sftp, then migrate, api, worker, sftp-ingest, and the frontend (nginx).
 
 services:
 
@@ -10,9 +10,9 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      # Phase 5 swaps this to Vault-sourced. Phase 1 hardcodes a known dev value
-      # so the container becomes healthy; this is NOT a violation of VAULT-04 because
-      # it lives in compose, not in app/.
+      # Dev defaults for the container's own credentials. The application reads its
+      # database URL from Vault (`secret/postgres`), seeded by `vault-seed`. Hardcoding
+      # values here is not a VAULT-04 violation because they live in compose, not app/.
       POSTGRES_USER: dropsort
       POSTGRES_PASSWORD: dropsort-dev
       POSTGRES_DB: dropsort
@@ -88,16 +88,56 @@ services:
       timeout: 3s
       retries: 10
 
-  # ---------- App services (BUILD-ONLY STUBS per CONTEXT D-17) ----------
-  # Phase 5 (Shari, INFRA) adds `command:` directives and `depends_on:` graph.
+  # ---------- App services ----------
+
+  vault-seed:
+    image: hashicorp/vault:1.18
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dropsort-dev-token}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-dropsort-dev-admin}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        vault kv put secret/admin/initial_password value="$$ADMIN_INITIAL_PASSWORD"
+        vault kv put secret/jwt signing_key="dropsort-dev-jwt-signing-key-do-not-use-in-prod-0123456789abcdef"
+        vault kv put secret/postgres url='postgresql+asyncpg://dropsort:dropsort-dev@db:5432/dropsort'
+        vault kv put secret/redis url='redis://redis:6379/0'
+        vault kv put secret/minio root_user=dropsort root_password=dropsort-dev-minio
+        vault kv put secret/sftp user=dropsort password=dropsort-dev-sftp
+        echo "vault-seed: done"
 
   api:
     build:
       context: .
       dockerfile: Dockerfile
     image: dropsort-backend:dev
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+      vault-seed:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
     environment:
       DROPSORT_MODE: api
+      REDIS_URL: redis://redis:6379/0
+      RQ_QUEUE_NAME: classification
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: dropsort
+      MINIO_SECRET_KEY: dropsort-dev-minio
+      MINIO_BUCKET: documents
+      PIPELINE_MAX_FILE_SIZE_MB: 25
     ports:
       - "${API_PORT:-8000}:8000"
 
@@ -113,6 +153,8 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+      vault-seed:
+        condition: service_completed_successfully
     environment:
       DROPSORT_MODE: worker
       REDIS_URL: redis://redis:6379/0
@@ -134,6 +176,8 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+      vault-seed:
+        condition: service_completed_successfully
     environment:
       DROPSORT_MODE: sftp-ingest
       REDIS_URL: redis://redis:6379/0
@@ -157,8 +201,13 @@ services:
         condition: service_healthy
       vault:
         condition: service_healthy
+      vault-seed:
+        condition: service_completed_successfully
     environment:
       DROPSORT_MODE: migrate
+      ALEMBIC_DATABASE_URL: postgresql+asyncpg://dropsort:dropsort-dev@db:5432/dropsort
+      VAULT_ADDR: http://vault:8200
+      VAULT_DEV_ROOT_TOKEN: ${VAULT_DEV_ROOT_TOKEN:-dropsort-dev-token}
 
   # ---------- Frontend (static SPA; nginx listens on container port 80) ----------
   frontend:
@@ -166,7 +215,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     image: dropsort-frontend:dev
     restart: unless-stopped
     ports:

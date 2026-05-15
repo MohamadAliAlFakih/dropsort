@@ -3,7 +3,7 @@
 from app.domain.audit import AuditEntryOut
 from app.domain.batch import BatchOut, BatchState
 from app.domain.prediction import Prediction, PredictionOut, PredictionRelabelIn, TopKItem
-from app.domain.user import Role, RoleChangeIn, UserCreate, UserOut
+from app.domain.user import Role, RoleChangeIn, UserActiveIn, UserCreate, UserOut
 
 __all__ = [
     "AuditEntryOut",
@@ -15,6 +15,7 @@ __all__ = [
     "Role",
     "RoleChangeIn",
     "TopKItem",
+    "UserActiveIn",
     "UserCreate",
     "UserOut",
 ]

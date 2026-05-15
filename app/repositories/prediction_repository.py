@@ -36,6 +36,16 @@ async def get_by_id(session: AsyncSession, pid: UUID) -> PredictionOut | None:
     return _to_out(row) if row else None
 
 
+async def map_id_to_filename(session: AsyncSession, prediction_ids: set[UUID]) -> dict[UUID, str]:
+    if not prediction_ids:
+        return {}
+    stmt = select(PredictionORM.id, PredictionORM.filename).where(
+        PredictionORM.id.in_(prediction_ids)
+    )
+    result = await session.execute(stmt)
+    return {row[0]: row[1] for row in result.all()}
+
+
 async def create(
     session: AsyncSession,
     *,

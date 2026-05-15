@@ -2,13 +2,19 @@
 .git
 .gitignore
 .gitattributes
+.github
 
-# Planning artifacts (never shipped - per CONTEXT D-06)
+# Planning + reference docs (never shipped)
 docs - Do Not Commit
 .planning
 
-# Frontend (separate Dockerfile in Phase 5b)
+# Frontend (separate Dockerfile)
 frontend
+
+# Tests + dev-only assets
+tests
+notebook
+*.ipynb
 
 # Caches
 __pycache__
@@ -18,9 +24,23 @@ __pycache__
 .ruff_cache
 .venv
 venv
+htmlcov
+.coverage
+*.egg-info
 
 # Editor noise
 .vscode
 .idea
 *.swp
 .DS_Store
+Thumbs.db
+
+# Local env + logs
+.env
+.env.*
+!.env.example
+*.log
+
+# Build artifacts
+dist
+build
