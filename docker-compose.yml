@@ -175,6 +175,9 @@ services:
         condition: service_healthy
     environment:
       DROPSORT_MODE: migrate
+      ALEMBIC_DATABASE_URL: postgresql+asyncpg://dropsort:dropsort-dev@db:5432/dropsort
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: dropsort-dev-token
 
   # ---------- Frontend (static SPA; nginx listens on container port 80) ----------
   frontend:
