@@ -13,6 +13,7 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { PredictionsRecentPage } from "./pages/PredictionsRecentPage";
 import { SettingsAccountPage } from "./pages/SettingsAccountPage";
 import { SettingsLayout } from "./pages/SettingsLayout";
+import { SystemHealthPage } from "./pages/SystemHealthPage";
 
 export function AppRoutes() {
   return (
@@ -43,6 +44,14 @@ export function AppRoutes() {
             element={
               <RequireAdmin>
                 <AdminUsersPage />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="system"
+            element={
+              <RequireAdmin>
+                <SystemHealthPage />
               </RequireAdmin>
             }
           />

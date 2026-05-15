@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { messageFromFastApiBody } from "../api/httpErrors";
 import { useAuth } from "../auth/AuthContext";
 import { loginWithPassword } from "../auth/login";
@@ -63,15 +63,22 @@ export function LoginPage() {
       }
 
       if (!res.ok) {
-        const fromFastApi = messageFromFastApiBody(text);
-        const msg = fromFastApi ?? (text.trim() || `HTTP ${res.status}`);
-        setError(msg);
+        if (res.status === 400 || res.status === 401) {
+          setError("Wrong email or password. Please try again.");
+        } else if (res.status === 403) {
+          setError("Your account is not active. Contact your administrator.");
+        } else if (res.status >= 500) {
+          setError("The server is having trouble right now. Please try again in a moment.");
+        } else {
+          const fromFastApi = messageFromFastApiBody(text);
+          setError(fromFastApi ?? "Could not sign in. Please try again.");
+        }
         return;
       }
 
       const parsed = parseJwtLoginBody(body);
       if (!parsed) {
-        setError("Login response missing access_token.");
+        setError("Could not sign in. Please try again.");
         return;
       }
 
@@ -79,8 +86,8 @@ export function LoginPage() {
       navigate(from ? `${from.pathname}${from.search ?? ""}` : "/settings/account", {
         replace: true,
       });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -92,17 +99,11 @@ export function LoginPage() {
 
   return (
     <div className="page page--narrow">
-      <PageHeader
-        title="Sign in"
-        description="Sign in with the email and password your administrator provided. Access is invitation-only—there is no self-service registration."
-      />
+      <PageHeader title="Sign in" description="Welcome back. Enter your email and password." />
 
       {from ? (
         <p className="muted" role="status">
-          Sign in to access the page you opened.{" "}
-          <Link className="inline-link" to={`${from.pathname}${from.search ?? ""}`}>
-            Go back
-          </Link>
+          Sign in to continue.
         </p>
       ) : null}
 

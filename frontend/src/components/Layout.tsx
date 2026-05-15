@@ -1,19 +1,117 @@
-import { NavLink, Outlet, useMatch } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { Button } from "./Button";
 import { ROLE_LABELS } from "../lib/roleLabels";
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive ? "nav-link nav-link--active" : "nav-link";
 }
 
-function settingsNavLinkClass(active: boolean): string {
-  return active ? "nav-link nav-link--active nav-link--settings" : "nav-link nav-link--settings";
+function SettingsMenu() {
+  const { me, meLoading, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    function onClick(ev: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(ev.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKey(ev: KeyboardEvent) {
+      if (ev.key === "Escape") {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="settings-menu" ref={wrapperRef}>
+      <button
+        type="button"
+        className="settings-menu__trigger"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Open account menu"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <svg
+          className="settings-menu__icon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      </button>
+
+      {open ? (
+        <div className="settings-menu__panel" role="menu">
+          <div className="settings-menu__identity">
+            {me ? (
+              <>
+                <div className="settings-menu__email">{me.email}</div>
+                <div className="settings-menu__role muted">{ROLE_LABELS[me.role]}</div>
+              </>
+            ) : meLoading ? (
+              <span className="nav-user-skeleton" aria-label="Loading account" />
+            ) : (
+              <div className="settings-menu__email">Account</div>
+            )}
+          </div>
+          <button
+            type="button"
+            className="settings-menu__item"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              navigate("/settings/account");
+            }}
+          >
+            Account settings
+          </button>
+          <button
+            type="button"
+            className="settings-menu__item settings-menu__item--danger"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              logout();
+            }}
+          >
+            Sign out
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function Layout() {
-  const { token, me, meLoading, logout } = useAuth();
-  const settingsArea = useMatch({ path: "/settings/*", end: false });
+  const { token, me } = useAuth();
+  const canSeeAudit = me?.role === "admin" || me?.role === "auditor";
 
   return (
     <>
@@ -51,31 +149,18 @@ export function Layout() {
                   <NavLink className={navLinkClass} to="/predictions/recent">
                     Predictions
                   </NavLink>
-                  <NavLink className={navLinkClass} to="/audit">
-                    Audit
-                  </NavLink>
+                  {canSeeAudit ? (
+                    <NavLink className={navLinkClass} to="/audit">
+                      Audit
+                    </NavLink>
+                  ) : null}
                 </div>
               ) : null}
             </div>
 
             <div className="site-nav__end">
               {token ? (
-                <>
-                  <NavLink className={() => settingsNavLinkClass(Boolean(settingsArea))} to="/settings/account">
-                    Settings
-                  </NavLink>
-                  {me && !meLoading ? (
-                    <div className="nav-user" aria-label="Signed-in account">
-                      <span className="nav-user__email">{me.email}</span>
-                      <span className="nav-user__access">Access level · {ROLE_LABELS[me.role]}</span>
-                    </div>
-                  ) : meLoading ? (
-                    <span className="nav-user nav-user--loading muted">Loading account…</span>
-                  ) : null}
-                  <Button type="button" variant="muted" onClick={logout}>
-                    Sign out
-                  </Button>
-                </>
+                <SettingsMenu />
               ) : (
                 <NavLink className={navLinkClass} to="/login">
                   Sign in

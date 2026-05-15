@@ -23,6 +23,7 @@ import { ErrorAlert } from "../components/ErrorAlert";
 import { Button } from "../components/Button";
 import { ListRefreshingHint } from "../components/ListRefreshingHint";
 import { PageHeader } from "../components/PageHeader";
+import { PredictionOverlay } from "../components/PredictionOverlay";
 import { RefreshButton } from "../components/RefreshButton";
 import { StatusBadge } from "../components/data/StatusBadge";
 import { useApiErrorHandler } from "../hooks/useApiErrorHandler";
@@ -156,6 +157,7 @@ export function BatchDetailPage() {
 
   const predColumns = useMemo<DataTableColumn[]>(() => {
     const base: DataTableColumn[] = [
+      { id: "preview", label: "Preview" },
       { id: "filename", label: "Document" },
       { id: "label", label: "Predicted type" },
       { id: "conf", label: "Confidence", align: "right" },
@@ -290,6 +292,13 @@ export function BatchDetailPage() {
           <DataTable className="data-table--interactive" columns={predColumns} aria-label="Classified documents">
             {preds.map((p) => (
               <tr key={p.id}>
+                <td>
+                  <PredictionOverlay
+                    predictionId={p.id}
+                    filename={p.filename}
+                    hasOverlay={Boolean(p.minio_overlay_key)}
+                  />
+                </td>
                 <td className="data-table-cell-strong">{p.filename}</td>
                 <td>{p.label}</td>
                 <td className="data-table-cell--numeric">

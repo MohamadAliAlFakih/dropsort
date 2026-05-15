@@ -17,7 +17,14 @@ export type HealthPayload = {
 };
 
 /** Preferred card order; unknown keys from the API are appended after. */
-export const HEALTH_SERVICE_ORDER = ["postgres", "redis", "vault", "casbin_policy"] as const;
+export const HEALTH_SERVICE_ORDER = [
+  "postgres",
+  "redis",
+  "vault",
+  "casbin_policy",
+  "minio",
+  "classifier",
+] as const;
 
 export function healthServiceTitle(key: string): string {
   switch (key) {
@@ -29,6 +36,10 @@ export function healthServiceTitle(key: string): string {
       return "Vault";
     case "casbin_policy":
       return "Access policy";
+    case "minio":
+      return "Object storage (MinIO)";
+    case "classifier":
+      return "Classifier weights";
     default:
       return key.replace(/_/g, " ");
   }

@@ -18,6 +18,7 @@ export const routes = {
 
   predictionsRecent: "/predictions/recent",
   predictionDetail: (predictionId: string) => `/predictions/${predictionId}`,
+  predictionOverlay: (predictionId: string) => `/predictions/${predictionId}/overlay`,
 
   adminUsers: "/admin/users",
   adminUsersInvite: "/admin/users/invite",
