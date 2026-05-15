@@ -1,194 +1,205 @@
-import { useState } from "react";
-import { apiFetch } from "../api/client";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { apiFetch, pathWithQuery } from "../api/client";
+import { getNetworkErrorMessage } from "../api/httpErrors";
 import { routes } from "../api/routes";
-import { ApiHttpError, getNetworkErrorMessage } from "../api/httpErrors";
+import type { BatchOut, PredictionOut } from "../api/types";
+import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/Button";
+import { ConfidenceValue } from "../components/ConfidenceValue";
+import { DataEmpty, DataSkeleton, DataTable, PageSection } from "../components/data";
+import type { DataTableColumn } from "../components/data/DataTable";
+import { StatusBadge } from "../components/data/StatusBadge";
 import { ErrorAlert } from "../components/ErrorAlert";
-import { LoadingSpinner } from "../components/LoadingSpinner";
 import { PageHeader } from "../components/PageHeader";
-import {
-  healthServiceTitle,
-  isHealthPayload,
-  orderedHealthDepKeys,
-  type HealthDepCheck,
-  type HealthPayload,
-} from "../lib/healthPayload";
+import { batchStateLabel, batchStateTone } from "../lib/documentUi";
+import { ROLE_LABELS } from "../lib/roleLabels";
 
-const SLOW_OK_LATENCY_MS = 400;
+const RECENT_BATCH_LIMIT = 5;
+const RECENT_PREDICTION_LIMIT = 5;
 
-function depStatusTone(dep: HealthDepCheck): "success" | "warning" | "danger" {
-  if (dep.status !== "ok") {
-    return "danger";
-  }
-  const ms = dep.latency_ms;
-  if (typeof ms === "number" && Number.isFinite(ms) && ms >= SLOW_OK_LATENCY_MS) {
-    return "warning";
-  }
-  return "success";
-}
+const batchColumns: DataTableColumn[] = [
+  { id: "id", label: "Batch" },
+  { id: "state", label: "Status" },
+  { id: "predictions", label: "Documents", align: "right" },
+  { id: "updated", label: "Last activity" },
+];
 
-function HealthStatusDot({ tone }: { tone: "success" | "warning" | "danger" }) {
-  return <span className={`health-dot health-dot--${tone}`} aria-hidden="true" />;
-}
+const predictionColumns: DataTableColumn[] = [
+  { id: "file", label: "Document" },
+  { id: "label", label: "Predicted type" },
+  { id: "conf", label: "Confidence", align: "right" },
+];
 
-function ServiceHealthCard({
-  depKey,
-  title,
-  dep,
-}: {
-  depKey: string;
-  title: string;
-  dep: HealthDepCheck;
-}) {
-  const tone = depStatusTone(dep);
-  const operational = dep.status === "ok";
-  const latencySlow = operational && tone === "warning";
-  const latency =
-    typeof dep.latency_ms === "number" && Number.isFinite(dep.latency_ms) ? (
-      <span className={`health-latency-chip${latencySlow ? " health-latency-chip--slow" : ""}`}>
-        {dep.latency_ms} ms
-        {latencySlow ? <span className="health-latency-chip__hint"> elevated</span> : null}
-      </span>
-    ) : null;
-  const extra =
-    depKey === "casbin_policy" && typeof dep.policy_count === "number" ? (
-      <p className="health-card__meta muted">{dep.policy_count} access rules loaded</p>
-    ) : null;
-  const err = dep.error ? (
-    <p className="health-card__err muted" role="status">
-      {dep.error}
-    </p>
-  ) : null;
-
+function SignedOutHome() {
   return (
-    <article className="health-card">
-      <div className="health-card__head">
-        <HealthStatusDot tone={tone} />
-        <h3 className="health-card__title">{title}</h3>
-        <span className={`health-card__badge health-card__badge--${tone}`}>
-          {operational ? "Operational" : "Unavailable"}
-        </span>
-      </div>
-      <div className="health-card__body">
-        {latency}
-        {extra}
-        {err}
-      </div>
-    </article>
+    <div className="page page--narrow">
+      <PageHeader
+        title="Welcome to Dropsort"
+        description="Automatic document classification for your team. Sign in to view batches, recent predictions, and team activity."
+        actions={
+          <Link to="/login">
+            <Button type="button">Sign in</Button>
+          </Link>
+        }
+      />
+    </div>
   );
 }
 
 export function HomePage() {
-  const [loading, setLoading] = useState(false);
-  const [payload, setPayload] = useState<HealthPayload | null>(null);
-  const [httpStatus, setHttpStatus] = useState<number | null>(null);
-  const [rawBody, setRawBody] = useState<string | null>(null);
-  const [lastChecked, setLastChecked] = useState<Date | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { token, me, meLoading } = useAuth();
 
-  async function checkHealth() {
-    setLoading(true);
-    setError(null);
-    setPayload(null);
-    setRawBody(null);
-    setHttpStatus(null);
+  const [batches, setBatches] = useState<BatchOut[] | null>(null);
+  const [batchesError, setBatchesError] = useState<string | null>(null);
+  const [batchesPending, setBatchesPending] = useState(true);
+
+  const [predictions, setPredictions] = useState<PredictionOut[] | null>(null);
+  const [predictionsError, setPredictionsError] = useState<string | null>(null);
+  const [predictionsPending, setPredictionsPending] = useState(true);
+
+  const loadBatches = useCallback(async () => {
+    setBatchesPending(true);
+    setBatchesError(null);
     try {
-      const res = await apiFetch(routes.health, { auth: false });
-      const text = await res.text();
-      setRawBody(text);
-      let parsed: unknown;
-      try {
-        parsed = text ? JSON.parse(text) : null;
-      } catch {
-        setError("Could not read health response.");
+      const path = pathWithQuery(routes.batches, { offset: 0, limit: RECENT_BATCH_LIMIT });
+      const res = await apiFetch(path);
+      if (!res.ok) {
+        setBatchesError("Could not load recent batches.");
+        setBatches(null);
         return;
       }
-      if (!isHealthPayload(parsed)) {
-        setError(
-          res.ok
-            ? "Health response was not in the expected format."
-            : getNetworkErrorMessage(new ApiHttpError(res.status, text)),
-        );
-        return;
-      }
-      setPayload(parsed);
-      setHttpStatus(res.status);
-      setLastChecked(new Date());
-      if (!res.ok && res.status !== 503) {
-        setError(getNetworkErrorMessage(new ApiHttpError(res.status, text)));
-      }
+      const data = (await res.json()) as BatchOut[];
+      setBatches(data);
     } catch (e) {
-      setError(getNetworkErrorMessage(e));
+      setBatchesError(getNetworkErrorMessage(e));
+      setBatches(null);
     } finally {
-      setLoading(false);
+      setBatchesPending(false);
     }
+  }, []);
+
+  const loadPredictions = useCallback(async () => {
+    setPredictionsPending(true);
+    setPredictionsError(null);
+    try {
+      const path = pathWithQuery(routes.predictionsRecent, { limit: RECENT_PREDICTION_LIMIT });
+      const res = await apiFetch(path);
+      if (!res.ok) {
+        setPredictionsError("Could not load recent predictions.");
+        setPredictions(null);
+        return;
+      }
+      const data = (await res.json()) as PredictionOut[];
+      setPredictions(data);
+    } catch (e) {
+      setPredictionsError(getNetworkErrorMessage(e));
+      setPredictions(null);
+    } finally {
+      setPredictionsPending(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
+    void loadBatches();
+    void loadPredictions();
+  }, [token, loadBatches, loadPredictions]);
+
+  if (!token) {
+    return <SignedOutHome />;
   }
 
-  const overallOk = Boolean(payload?.ok === true && httpStatus === 200);
+  const greetingName = me?.email ?? "there";
+  const role = me && !meLoading ? ROLE_LABELS[me.role] : null;
 
   return (
     <div className="page">
       <PageHeader
-        title="Platform health"
-        description="On-demand checks against the live environment—useful before handoffs or when validating an incident."
+        title={`Welcome back, ${greetingName}`}
+        description={role ? `Signed in as ${role}.` : "Here's what's happening in your workspace."}
         actions={
-          <Button type="button" onClick={() => void checkHealth()} disabled={loading}>
-            {loading ? "Checking…" : "Run health check"}
-          </Button>
+          <div className="page-header-actions__row">
+            <Link to="/batches">
+              <Button type="button" variant="muted">
+                View all batches
+              </Button>
+            </Link>
+            <Link to="/predictions/recent">
+              <Button type="button">View recent predictions</Button>
+            </Link>
+          </div>
         }
       />
 
-      {loading ? <LoadingSpinner label="Running dependency checks…" /> : null}
-      <ErrorAlert message={error} />
-
-      {lastChecked ? (
-        <p className="health-last-checked muted" role="status">
-          Last checked: {lastChecked.toLocaleString()}
-        </p>
-      ) : null}
-
-      {payload ? (
-        <div className="health-dashboard">
-          <section className="health-summary panel" aria-labelledby="health-summary-title">
-            <div className="health-summary__row">
-              <HealthStatusDot tone={overallOk ? "success" : "danger"} />
-              <div>
-                <h2 id="health-summary-title" className="health-summary__title">
-                  {overallOk ? "All systems operational" : "Attention required"}
-                </h2>
-                <p className="health-summary__desc muted">
-                  {overallOk
-                    ? "Every dependency reported a successful check."
-                    : "One or more dependencies did not pass the latest check. Review the cards below."}
-                </p>
-              </div>
-              <span className={`health-summary__pill ${overallOk ? "health-summary__pill--ok" : "health-summary__pill--warn"}`}>
-                {overallOk ? "Operational" : "Degraded"}
-              </span>
-            </div>
-            {payload.request_id ? (
-              <p className="health-summary__rid muted">
-                Request reference: <code>{String(payload.request_id)}</code>
-              </p>
-            ) : null}
-          </section>
-
-          <div className="health-grid" role="list">
-            {orderedHealthDepKeys(payload.deps).map((depKey: string) => (
-              <div key={depKey} role="listitem">
-                <ServiceHealthCard depKey={depKey} title={healthServiceTitle(depKey)} dep={payload.deps[depKey]} />
-              </div>
+      <PageSection
+        title="Recent batches"
+        description="The five most recent uploads or ingest jobs."
+      >
+        {batchesPending && batches === null ? (
+          <DataSkeleton rows={3} columns={4} />
+        ) : null}
+        <ErrorAlert message={batchesError} />
+        {batches && batches.length === 0 ? (
+          <DataEmpty
+            title="No batches yet"
+            description="Upload a document or wait for the SFTP ingest to drop a batch."
+          />
+        ) : null}
+        {batches && batches.length > 0 ? (
+          <DataTable className="data-table--interactive" columns={batchColumns} aria-label="Recent batches">
+            {batches.map((b) => (
+              <tr key={b.id}>
+                <td>
+                  <Link className="inline-link" to={`/batches/${b.id}`}>
+                    {b.id}
+                  </Link>
+                </td>
+                <td>
+                  <StatusBadge tone={batchStateTone(b.state)}>{batchStateLabel(b.state)}</StatusBadge>
+                </td>
+                <td className="data-table-cell--numeric">{b.prediction_count}</td>
+                <td className="data-table-cell-muted">{b.updated_at}</td>
+              </tr>
             ))}
-          </div>
+          </DataTable>
+        ) : null}
+      </PageSection>
 
-          {rawBody ? (
-            <details className="health-technical panel">
-              <summary>Technical details (JSON)</summary>
-              <pre className="health-technical__pre">{rawBody}</pre>
-            </details>
-          ) : null}
-        </div>
-      ) : null}
+      <PageSection
+        title="Recent predictions"
+        description="The latest documents the classifier scored."
+      >
+        {predictionsPending && predictions === null ? (
+          <DataSkeleton rows={3} columns={3} />
+        ) : null}
+        <ErrorAlert message={predictionsError} />
+        {predictions && predictions.length === 0 ? (
+          <DataEmpty
+            title="No predictions yet"
+            description="Once a batch finishes processing, the latest results will land here."
+          />
+        ) : null}
+        {predictions && predictions.length > 0 ? (
+          <DataTable className="data-table--interactive" columns={predictionColumns} aria-label="Recent predictions">
+            {predictions.map((p) => (
+              <tr key={p.id}>
+                <td className="data-table-cell-strong">
+                  <Link className="inline-link" to={`/batches/${p.batch_id}`}>
+                    {p.filename}
+                  </Link>
+                </td>
+                <td>{p.label}</td>
+                <td className="data-table-cell--numeric">
+                  <ConfidenceValue value={p.top1_confidence} />
+                </td>
+              </tr>
+            ))}
+          </DataTable>
+        ) : null}
+      </PageSection>
     </div>
   );
 }

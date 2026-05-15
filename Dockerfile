@@ -8,7 +8,7 @@ FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_LINK_MODE=copy \
-    UV_NO_CACHE=1 \
+    UV_CACHE_DIR=/root/.cache/uv \
     DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* && \
@@ -27,8 +27,9 @@ WORKDIR /app
 # Copy dependency files first
 COPY pyproject.toml uv.lock* ./
 
-# Install dependencies
-RUN uv sync --frozen --no-dev || uv sync --no-dev
+# Install dependencies (BuildKit cache mount keeps wheels between builds)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev || uv sync --no-dev
 
 # Copy source code
 COPY app/ ./app/
@@ -36,7 +37,8 @@ COPY alembic/ ./alembic/
 COPY alembic.ini ./alembic.ini
 
 # Install project
-RUN uv pip install --system -e .
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system -e .
 
 # ---------- Runtime ----------
 FROM python:${PYTHON_VERSION}-slim-bookworm

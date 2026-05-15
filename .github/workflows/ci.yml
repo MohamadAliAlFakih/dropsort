@@ -35,19 +35,23 @@ jobs:
       - name: Pytest
         run: uv run pytest
 
-      - name: Grep gate — no literal "password" under app/
+      - name: Grep gate — no hardcoded password literals under app/
         shell: bash
         run: |
           set -euo pipefail
 
-          MATCHES=$(grep -ri \
+          # Catches string-literal assignments like  password = "abc"  or  "password": "abc"
+          # but allows variable names, type annotations, comments, and docstrings to reference
+          # the word. The canonical secret reader (`app/core/vault.py`) is exempt.
+          MATCHES=$(grep -rniE \
+            --include='*.py' \
             --exclude-dir=__pycache__ \
             --exclude-dir=.mypy_cache \
             --exclude='vault.py' \
-            'password' app/ || true)
+            '(password|secret|passwd)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']+["'"'"']' app/ || true)
 
           if [ -n "$MATCHES" ]; then
-            echo "::error::Forbidden match for 'password' in app/"
+            echo "::error::Hardcoded password/secret literal found in app/"
             echo "$MATCHES"
             exit 1
           fi

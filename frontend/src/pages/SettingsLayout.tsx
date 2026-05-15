@@ -27,6 +27,11 @@ export function SettingsLayout() {
               Team & accounts
             </NavLink>
           ) : null}
+          {showAdmin ? (
+            <NavLink className={settingsNavClass} to="/settings/system">
+              System health
+            </NavLink>
+          ) : null}
         </nav>
         <div className="settings-outlet">
           <Outlet />

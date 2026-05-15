@@ -1,6 +1,6 @@
 # dropsort - local laptop stack.
-# Phase 1: db/redis/vault/minio/sftp come up healthy. api/worker/sftp-ingest/migrate
-# are build-only stubs (no command:) until Phase 5 fills them in.
+# `docker compose up` brings the full stack online: postgres, redis, vault (+ vault-seed),
+# minio, sftp, then migrate, api, worker, sftp-ingest, and the frontend (nginx).
 
 services:
 
@@ -10,9 +10,9 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      # Phase 5 swaps this to Vault-sourced. Phase 1 hardcodes a known dev value
-      # so the container becomes healthy; this is NOT a violation of VAULT-04 because
-      # it lives in compose, not in app/.
+      # Dev defaults for the container's own credentials. The application reads its
+      # database URL from Vault (`secret/postgres`), seeded by `vault-seed`. Hardcoding
+      # values here is not a VAULT-04 violation because they live in compose, not app/.
       POSTGRES_USER: dropsort
       POSTGRES_PASSWORD: dropsort-dev
       POSTGRES_DB: dropsort
@@ -88,8 +88,7 @@ services:
       timeout: 3s
       retries: 10
 
-  # ---------- App services (BUILD-ONLY STUBS per CONTEXT D-17) ----------
-  # Phase 5 (Shari, INFRA) adds `command:` directives and `depends_on:` graph.
+  # ---------- App services ----------
 
   vault-seed:
     image: hashicorp/vault:1.18
