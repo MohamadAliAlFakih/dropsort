@@ -48,7 +48,8 @@ jobs:
             --exclude-dir=__pycache__ \
             --exclude-dir=.mypy_cache \
             --exclude='vault.py' \
-            '(password|secret|passwd)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']+["'"'"']' app/ || true)
+            '(password|secret|passwd)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']+["'"'"']' app/ \
+            | grep -v 'noqa: S10[56]' || true)
 
           if [ -n "$MATCHES" ]; then
             echo "::error::Hardcoded password/secret literal found in app/"

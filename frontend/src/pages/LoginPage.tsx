@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { messageFromFastApiBody } from "../api/httpErrors";
 import { useAuth } from "../auth/AuthContext";
 import { loginWithPassword } from "../auth/login";
