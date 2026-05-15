@@ -14,7 +14,7 @@ export function SettingsLayout() {
     <div className="page settings-page">
       <PageHeader
         title="Settings"
-        description="Your profile, access level, and—when you are an administrator—workspace accounts."
+        description="Your profile, access level, and (for administrators) workspace accounts."
       />
 
       <div className="settings-shell">

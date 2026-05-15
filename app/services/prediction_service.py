@@ -113,6 +113,8 @@ async def record_prediction(
     """
     async with session.begin():
         batch = await batch_repository.upsert_external(session, batch_external_id)
+        if batch.state == "received":
+            await batch_repository.set_state(session, batch.id, "processing")
         created = await prediction_repository.create(
             session,
             batch_id=batch.id,
@@ -131,6 +133,8 @@ async def record_prediction(
                 filename=filename,
             )
             return None
+        # Single-document batch flow: mark complete on first successful prediction.
+        await batch_repository.set_state(session, batch.id, "complete")
 
     await FastAPICache.clear(namespace="batches-list")
     await FastAPICache.clear(namespace=f"batches-detail:{batch.id}")

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch, pathWithQuery } from "../api/client";
 import { getNetworkErrorMessage } from "../api/httpErrors";
 import { routes } from "../api/routes";
 import type { BatchOut, BatchUploadAccepted } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { Button } from "../components/Button";
 import {
   DataEmpty,
   DataSkeleton,
@@ -43,6 +44,7 @@ export function BatchesPage() {
   const [error, setError] = useState<string | null>(null);
   const [uploadPending, setUploadPending] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canUpload = Boolean(me && !meLoading && (me.role === "reviewer" || me.role === "admin"));
 
@@ -69,23 +71,37 @@ export function BatchesPage() {
 
   async function onTiffSelected(ev: ChangeEvent<HTMLInputElement>) {
     const input = ev.currentTarget;
-    const file = input.files?.[0];
+    const files = input.files ? Array.from(input.files) : [];
     input.value = "";
-    if (!file) {
+    if (files.length === 0) {
       return;
     }
     setUploadError(null);
     setUploadPending(true);
+    let lastBatchId: string | null = null;
+    const failures: string[] = [];
     try {
-      const fd = new FormData();
-      fd.append("file", file, file.name);
-      const res = await apiFetch(routes.batchesUpload, { method: "POST", body: fd });
-      await assertOk(res);
-      const data = (await res.json()) as BatchUploadAccepted;
+      for (const file of files) {
+        try {
+          const fd = new FormData();
+          fd.append("file", file, file.name);
+          const res = await apiFetch(routes.batchesUpload, { method: "POST", body: fd });
+          await assertOk(res);
+          const data = (await res.json()) as BatchUploadAccepted;
+          lastBatchId = data.batch.id;
+        } catch (perFile) {
+          failures.push(`${file.name}: ${getNetworkErrorMessage(perFile) || "upload failed"}`);
+        }
+      }
       await load();
-      navigate(`/batches/${data.batch.id}`);
-    } catch (e) {
-      setUploadError(getNetworkErrorMessage(e) || "Could not upload file.");
+      if (failures.length > 0) {
+        setUploadError(
+          `${files.length - failures.length} of ${files.length} uploaded. Failed: ${failures.join("; ")}`,
+        );
+      }
+      if (lastBatchId && failures.length === 0) {
+        navigate(`/batches/${lastBatchId}`);
+      }
     } finally {
       setUploadPending(false);
     }
@@ -103,22 +119,29 @@ export function BatchesPage() {
 
       {canUpload ? (
         <PageSection
-          title="Upload TIFF"
-          description="Send a single .tif or .tiff to the same classification pipeline as SFTP ingestion. After upload you are taken to the batch page; results appear automatically while the batch is still processing."
+          title="Scan simulator"
+          description="Drop a document to send it through the classifier."
         >
           <div className="panel batch-upload-bar">
             <p className="muted batch-upload-bar__hint">
-              Same MinIO path, queue, and inference worker as SFTP. Maximum file size matches server settings.
+              Pick one or more documents. Each becomes its own batch.
             </p>
             <input
-              className="batch-upload-bar__input"
+              ref={fileInputRef}
               type="file"
               accept=".tif,.tiff,image/tiff"
+              multiple
               disabled={uploadPending}
-              aria-busy={uploadPending}
-              aria-label={uploadPending ? "Uploading TIFF" : "Choose TIFF file to upload"}
               onChange={(ev) => void onTiffSelected(ev)}
+              hidden
             />
+            <Button
+              type="button"
+              disabled={uploadPending}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploadPending ? "Uploading…" : "Choose documents"}
+            </Button>
           </div>
           <ErrorAlert message={uploadError} />
         </PageSection>

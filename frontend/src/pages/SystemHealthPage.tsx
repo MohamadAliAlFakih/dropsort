@@ -130,7 +130,7 @@ export function SystemHealthPage() {
     <div className="page">
       <PageHeader
         title="Platform health"
-        description="On-demand checks against the live environment—useful before handoffs or when validating an incident."
+        description="On-demand checks against the live environment. Useful before handoffs or when validating an incident."
         actions={
           <Button type="button" onClick={() => void checkHealth()} disabled={loading}>
             {loading ? "Checking…" : "Run health check"}

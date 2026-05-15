@@ -42,7 +42,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (token) {
-      navigate(from ? `${from.pathname}${from.search ?? ""}` : "/settings/account", {
+      navigate(from ? `${from.pathname}${from.search ?? ""}` : "/", {
         replace: true,
       });
     }
@@ -83,7 +83,7 @@ export function LoginPage() {
       }
 
       setToken(parsed.access_token);
-      navigate(from ? `${from.pathname}${from.search ?? ""}` : "/settings/account", {
+      navigate(from ? `${from.pathname}${from.search ?? ""}` : "/", {
         replace: true,
       });
     } catch {
@@ -98,47 +98,61 @@ export function LoginPage() {
   }
 
   return (
-    <div className="page page--narrow">
-      <PageHeader title="Sign in" description="Welcome back. Enter your email and password." />
+    <div className="login-shell">
+      <div className="login-card">
+        <aside className="login-brand">
+          <div className="login-brand__inner">
+            <div className="login-brand__name">Dropsort</div>
+            <div className="login-brand__tag">Document intelligence</div>
+            <p className="login-brand__pitch">
+              Classify, review, and audit documents in one workspace.
+            </p>
+          </div>
+          <div className="login-brand__glow" aria-hidden="true" />
+        </aside>
 
-      {from ? (
-        <p className="muted" role="status">
-          Sign in to continue.
-        </p>
-      ) : null}
+        <section className="login-form-side">
+          <PageHeader title="Sign in" description="Welcome back. Enter your email and password." />
+          {from ? (
+            <p className="muted" role="status">
+              Sign in to continue.
+            </p>
+          ) : null}
 
-      <form className="auth-form panel" onSubmit={onSubmit}>
-        <div className="form-field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="username"
-            value={email}
-            onChange={(ev) => setEmail(ev.target.value)}
-            required
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(ev) => setPassword(ev.target.value)}
-            required
-          />
-        </div>
-        <ErrorAlert message={error} />
-        <div className="form-field">
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Signing in…" : "Sign in"}
-          </Button>
-        </div>
-      </form>
+          <form className="auth-form" onSubmit={onSubmit}>
+            <div className="form-field">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(ev) => setEmail(ev.target.value)}
+                required
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(ev) => setPassword(ev.target.value)}
+                required
+              />
+            </div>
+            <ErrorAlert message={error} />
+            <div className="form-field">
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Signing in…" : "Sign in"}
+              </Button>
+            </div>
+          </form>
+        </section>
+      </div>
     </div>
   );
 }
