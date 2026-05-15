@@ -49,16 +49,35 @@ class Settings(BaseSettings):
     sftp_port: int = 2222
     vault_port: int = 8200
 
+    # --- Pipeline / local compose defaults ---
+    redis_url: str = "redis://redis:6379/0"
+    rq_queue_name: str = "classification"
+
+    minio_endpoint: str = "minio:9000"
+    minio_access_key: str = "dropsort"
+    minio_secret_key: str = "dropsort-dev-minio"  # noqa: S105 -- dev fallback; prod via Vault
+    minio_bucket: str = "documents"
+    minio_secure: bool = False
+
+    sftp_host: str = "sftp"
+    sftp_port_internal: int = 22
+    sftp_username: str = "dropsort"
+    sftp_secret: str = "dropsort-dev-sftp"  # noqa: S105 -- dev fallback; prod via Vault
+    sftp_watch_dir: str = "/incoming"
+    sftp_poll_interval_seconds: int = 5
+
+    pipeline_max_file_size_mb: int = 25
+    
     # --- Observability ---
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
     # --- Classifier refuse-to-start threshold (BOOT-04) ---
-    min_model_top1: float | None = Field(
-        default=None,
+    min_model_top1: float = Field(
+        default=0.75,
         description=(
-            "Refuse-to-start threshold. Phase 2 (Saleh) sets this post-Colab-eval. "
-            "Phase 1 only wires the env var; api/worker boot only checks this in Phase 3+ once "
-            "model_card.json exists."
+            "Refuse-to-start threshold for model card test_top1. "
+            "Trained ConvNeXt Tiny scored 0.791; 0.75 is the safe floor. "
+            "Override via MIN_MODEL_TOP1 env var."
         ),
     )
 

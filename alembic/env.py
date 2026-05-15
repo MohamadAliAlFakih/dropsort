@@ -20,11 +20,9 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+from app.db.models import Base
 
-# Phase 1: no metadata yet. Phase 3 swaps to:
-#     from app.db.models import Base
-#     target_metadata = Base.metadata
-target_metadata = None
+target_metadata = Base.metadata
 
 config = context.config
 
