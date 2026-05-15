@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git lfs *)",
+      "Bash(Measure-Object)",
+      "Bash(Select-Object -ExpandProperty Count)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('app/classifier/models/model_card.json'\\)\\); m=d['metrics']; print\\('top1:', m.get\\('test_top1'\\)\\); print\\('top5:', m.get\\('test_top5'\\)\\); print\\('golden_top1:', m.get\\('test_top1_golden'\\)\\); print\\('golden_top5:', m.get\\('test_top5_golden','MISSING'\\)\\); print\\('per_class keys:', len\\(m.get\\('per_class',{}\\)\\)\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(uv lock *)",
+      "Bash(docker version *)",
+      "Bash(docker info *)"
+    ]
+  }
+}
