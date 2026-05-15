@@ -21,11 +21,21 @@ Developers and presenters running the project on a laptop. Infra/UI maintainer: 
 
 Follow the root **README.md** for the current recommended command sequence. `TODO(team):` replace this section with a single canonical path when `docker compose up` runs the full stack end-to-end.
 
-## Vault seeding (REQUIRED before first `alembic upgrade head`)
+## Vault seeding
 
-Vault dev mode starts empty. The backend lifespan + the Alembic admin seed both fail
-without these keys. Run after `docker compose up -d vault` and before any backend boot
-or migration:
+**Automatic via the `vault-seed` compose service** — `docker compose up` runs `vault-seed`
+after the `vault` container becomes healthy. It writes all six secrets, exits, and
+`api` / `worker` / `sftp-ingest` / `migrate` all wait for it via
+`depends_on: vault-seed: service_completed_successfully`. No manual `vault kv put`
+needed for the standard flow.
+
+The initial admin login (`admin@example.com`) password defaults to `dropsort-dev-admin`.
+Override by setting `ADMIN_INITIAL_PASSWORD` in `.env` before `docker compose up`.
+
+### Manual seeding (only if running services outside compose)
+
+If you bring up Vault on its own (`docker compose up -d vault`) and run the backend
+locally with `uvicorn`, the auto-seed service won't run. Seed manually:
 
 ```bash
 # 1) Admin seed used by Alembic revision 0002 to create the initial admin user.
